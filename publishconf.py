@@ -9,11 +9,6 @@ from pelicanconf import *
 SITEURL = 'https://www.niwi.nz'
 
 FEED_ALL_ATOM = 'feeds/all.atom.xml'
-CATEGORY_FEED_ATOM = 'feeds/%s.atom.xml'
-DELETE_OUTPUT_DIRECTORY = True
-
+CATEGORY_FEED_ATOM = 'feeds/{slug}.atom.xml'
 DELETE_OUTPUT_DIRECTORY = True
 RELATIVE_URLS = False
-
-GOOGLE_ANALYTICS = "UA-23352570-2"
-DISQUS_SITENAME = "niwibe"

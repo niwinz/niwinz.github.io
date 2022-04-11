@@ -16,11 +16,11 @@ GITHUB = "https://github.com/niwinz"
 RELATIVE_URLS = False
 
 THEME = "themes/niwibe"
-LOCALE = ["en_US"]
+LOCALE = ["en_US.utf8"]
 DEFAULT_LANG = "en_US"
 
 FEED_ALL_RSS = "feeds/all.rss.xml"
-CATEGORY_FEED_RSS = "feeds/%s.rss.xml"
+CATEGORY_FEED_RSS = "feeds/{slug}.rss.xml"
 FILENAME_METADATA = "(?P<date>\d{4}-\d{2}-\d{2})-(?P<slug>.*)"
 
 ARTICLE_URL = "{date:%Y}/{date:%m}/{date:%d}/{slug}/"

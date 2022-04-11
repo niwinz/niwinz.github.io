@@ -2,3 +2,5 @@
 *.pid
 output/
 .*.swp
+/env/
+/cache/
