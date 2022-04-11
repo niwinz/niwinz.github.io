@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>niwi.nz : Stateless Authentication with api rest.</title>
+    <meta name=viewport content='width=200, initial-scale=1'>
+
+  <meta name="desciption" content="When we talk about authentication for api rest, almost everyone tends to think about oauth1 or oauth2 and their variants defined by service providers. It’s true that there also other auth systems such as token, openid, etc, but they are not as widely used in comparison with oauth. What do you think about them? Are they all truly stateless? How authentication works? Before I start, I’d like to explain how standard (http session) works and compare it to oauth2. Basic steps on how standard http..." />
+    <meta name="author" content="Andrey Antukh" />
+
+    <link rel="stylesheet" href="https://www.niwi.nz/theme/css/main.css" />
+
+      <link href="https://www.niwi.nz/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="niwi.nz Atom Feed" />
+
+      <link href="https://www.niwi.nz/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="niwi.nz RSS Feed" />
+
+    <!--[if IE]>
+        <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!--[if lte IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie.css"/>
+        <script src="https://www.niwi.nz/js/IE8.js" type="text/javascript"></script>
+    <![endif]-->
+
+    <!--[if lt IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie6.css"/>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div id="wrap">
+      <div id="container">
+
+        <div class="entry">
+  <header>
+    <a href="https://www.niwi.nz"><small>(return to home)</small></a>
+    <h1>
+      <a href="https://www.niwi.nz/2014/06/07/stateless-authentication-with-api-rest/" id="page-title">Stateless Authentication with api rest.</a>
+    </h1>
+    <div class="article-meta">
+        <small class="time">
+          Date:
+          <time datetime="2014-06-07T00:00:00+00:00">
+            Sat 07 June 2014
+          </time>
+        </small>
+      <br />
+      <small class="tags">
+        Tags:
+          <a href="https://www.niwi.nz/tag/authentication.html">authentication,           </a>
+          <a href="https://www.niwi.nz/tag/api.html">api,           </a>
+          <a href="https://www.niwi.nz/tag/rest.html">rest,           </a>
+          <a href="https://www.niwi.nz/tag/clojure.html">clojure,           </a>
+          <a href="https://www.niwi.nz/tag/python.html">python          </a>
+      </small>
+
+      <br />
+      <small class="tags">
+        Author:
+          <span>Andrey Antukh</span>      </small>
+    </div>
+  </header>
+  <article>
+    <div id="article-content">
+      <p>When we talk about authentication for api rest, almost everyone tends to think about oauth1 or oauth2 and their variants defined by service providers. It’s true that there also other auth systems such as token, openid, etc, but they are not as widely used in comparison with oauth.</p>
+<p>What do you think about them? Are they all truly stateless?</p>
+<h2>How authentication works?</h2>
+<p>Before I start, I’d like to explain how standard (http session) works and compare it to oauth2.</p>
+<h3>Basic steps on how standard http session authentication works:</h3>
+<ol>
+<li>Client sends its credentials to server.</li>
+<li>Server authenticates them and generates fixed length token.</li>
+<li>Server stores previously generated token in some one storage with user identifier.</li>
+<li>Server sends previously generated token to client with new Cookie "sessionid=here-the-random-token".</li>
+<li>Now, client, in each request, sends that token in each request using cookies header.</li>
+<li>Server in each request, extract session id token from incoming cookie, looks up the user identifier
+   on its key/value and query database for obtain user information.</li>
+</ol>
+<h3>Basic steps on how oauth2 works:</h3>
+<ol>
+<li>Client sends its credentials to server.</li>
+<li>Server authenticates them and generates fixed length token.</li>
+<li>Server stores previously generated token in some one storage with user identifier.</li>
+<li>Server sends previously generated token to client in a response body (usually in json format).</li>
+<li>Now, client sends that token in each request using the "Authorization" header.</li>
+<li>Server, in each request, extract the token from authorization header and looks up the user identifier
+   on its storage and query database for obtain the user information.</li>
+</ol>
+<p>This is a very superficial overview of oauth2 steps so if you want know more about it please check this article: <a href="http://aaronparecki.com/articles/2012/07/29/1/oauth2-simplified">OAuth2 Simplified</a></p>
+<h2>Are they truly stateless?</h2>
+<p>Now, having viewed the comparison, you can easily see that oauth2 does not differ that much from standard http session authentication. The big difference is that the token is sent using a different header. If you are of the opinion that both methods are stateless, you are wrong, here is why.</p>
+<p>Stateless means without state, but as we already saw, http session, oauth, etc… have a (small) state: the token storage. This is not a bad solution per se, but it poses several disadvantages:</p>
+<ul>
+<li>It requires shared storage if you want to scale the number of your servers.</li>
+<li>With hundreds of thousands clients, you are forced to maintain hundreds of thousands tokens.</li>
+<li>With hundreds of thousands clients (and each client allowed to have more than one token) token storage can be very expensive.</li>
+</ul>
+<h2>What is stateless authentication?</h2>
+<p>Again, stateless means without state. But, how can we identify a user from a token without having any state on the server? Surprisingly, it’s very easy! just send all the data to the client.</p>
+<p>So what would you store/send (send to client/network)? The most trivial example is an access token. Access tokens usually have a unique ID, an expiration date and the ID of the client that created it. To store this, you would just put this data into a JSON object, and encode it using base64.</p>
+<p>Now, having a self-contained token, you will need to make sure that nobody can manipulate the data. For this you should sign it using <a href="http://en.wikipedia.org/wiki/Message_authentication_code">MAC algorithm</a> or any other digital signature method available.</p>
+<p>This approach has great advantages:</p>
+<ul>
+<li>The biggest one is that your storage needs are zero, because you are not storing anything.</li>
+<li>An application that forgets about its access token will simply no longer remember it and the data will automatically expire.</li>
+<li>Systems can be entirely decoupled from each other, thanks to no more shared token storage.</li>
+</ul>
+<h2>How I can use it with my language?</h2>
+<p>This is a simplest step, because almost all modern languages have good cryptographic signature libraries
+and utils to work with both json and base64.</p>
+<p>Lets see an example in Python. You can use <a href="http://pythonhosted.org/itsdangerous/">itsdangerous</a>.</p>
+<div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">itsdangerous</span> <span class="kn">import</span> <span class="n">JSONWebSignatureSerializer</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="n">JSONWebSignatureSerializer</span><span class="p">(</span><span class="s1">&#39;secret-key&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="mi">42</span><span class="p">})</span>
+<span class="go">&#39;eyJhbGciOiJIUzI1NiJ9.eyJ4Ijo0Mn0.ZdTn1YyGz9Yx5B5wNpWRL221G1WpVE5fPCPKNuc6UAo&#39;</span>
+</code></pre></div>
+
+<p>Or even more compact using Clojure, you can use <a href="https://github.com/niwibe/buddy">buddy</a>.</p>
+<div class="highlight"><pre><span></span><code><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">require</span> <span class="o">&#39;</span><span class="p">[</span><span class="nv">buddy.sign.jws</span> <span class="ss">:as</span> <span class="nv">jws</span><span class="p">])</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">jws/sign</span> <span class="p">{</span><span class="ss">:x</span> <span class="mi">1</span><span class="p">}</span> <span class="s">&quot;secret-key&quot;</span><span class="p">)</span>
+<span class="s">&quot;eyJ0eXAiOiJKV1MiLCJhbGciOiJIUzI1NiJ9.eyJ4IjoxfQ.-hx2Os6uDC12kEqm2IDnKG0jWlq3wLmqgMHjtulRqr0&quot;</span>
+</code></pre></div>
+
+<h2>Myths of security flaws</h2>
+<p>Before writing this short article, I went to several people and talked about this. In almost all situations I ended up receiving this comment:</p>
+<p><em>"I don't trust it, because it send data to the client"</em></p>
+<p>If you do not trust the proposed approach, you are indirectly stating that you don’t trust the widely used MAC algorithms (they are used in almost every security piece of software). This criticism lacks broader knowledge.</p>
+<p><em>It's vulnerable to man-in-the-middle attack</em></p>
+<p>This a different type of criticism. Yes, it is vulnerable… as any other authentication system mentioned here. The most standard ways of authentication are also vulnerable to that attack. SSL should be used to prevent it. This criticism is also very weak in the sense that is not particular to a stateless authentication system.</p>
+<h2>Summary</h2>
+<p>Signed self contained token is a nice way to avoid using databases/storage. It allows decoupling, better system scaling and allows you to write different parts of your system in different programming languages.</p>
+<p>It’s nothing new, people have been doing this for ages.</p>
+<ul>
+<li>Related article: <a href="http://lucumr.pocoo.org/2013/11/17/my-favorite-database/">My Favorite Database is the Network</a></li>
+<li><a href="http://www.kaleidos.net/blog/295/stateless-authentication-with-api-rest/">Original article</a></li>
+</ul>
+    </div>
+  </article>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

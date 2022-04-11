@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>niwi.nz : Get current timestamp in PostgreSQL</title>
+    <meta name=viewport content='width=200, initial-scale=1'>
+
+  <meta name="desciption" content="I&#39;m pretty sure that almost everyone that have used PostgreSQL knows the now() function. Its purpose is mostly obvious: return the current timestamp or at least its name indicates that. test=# select now(); now ------------------------------- 2016-03-27 12:54:50.449097+00 (1 row) test=# select now(); now ------------------------------- 2016-03-27 12:58:52.217013+00 (1 row) But what is happens if we execute it inside of a transaction: test=# BEGIN; BEGIN test=# select now(); now..." />
+    <meta name="author" content="Andrey Antukh" />
+
+    <link rel="stylesheet" href="https://www.niwi.nz/theme/css/main.css" />
+
+      <link href="https://www.niwi.nz/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="niwi.nz Atom Feed" />
+
+      <link href="https://www.niwi.nz/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="niwi.nz RSS Feed" />
+
+    <!--[if IE]>
+        <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!--[if lte IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie.css"/>
+        <script src="https://www.niwi.nz/js/IE8.js" type="text/javascript"></script>
+    <![endif]-->
+
+    <!--[if lt IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie6.css"/>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div id="wrap">
+      <div id="container">
+
+        <div class="entry">
+  <header>
+    <a href="https://www.niwi.nz"><small>(return to home)</small></a>
+    <h1>
+      <a href="https://www.niwi.nz/2016/03/28/get-current-timestamp-in-postgresql/" id="page-title">Get current timestamp in PostgreSQL</a>
+    </h1>
+    <div class="article-meta">
+        <small class="time">
+          Date:
+          <time datetime="2016-03-28T00:00:00+00:00">
+            Mon 28 March 2016
+          </time>
+        </small>
+      <br />
+      <small class="tags">
+        Tags:
+          <a href="https://www.niwi.nz/tag/postgresql.html">postgresql,           </a>
+          <a href="https://www.niwi.nz/tag/time.html">time          </a>
+      </small>
+
+      <br />
+      <small class="tags">
+        Author:
+          <span>Andrey Antukh</span>      </small>
+    </div>
+  </header>
+  <article>
+    <div id="article-content">
+      <p>I'm pretty sure that almost everyone that have used PostgreSQL knows the <code>now()</code>
+function. Its purpose is mostly obvious: return the current timestamp or at least
+its name indicates that.</p>
+<div class="highlight"><pre><span></span><code><span class="gp">test=#</span><span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="n">now</span><span class="p">();</span><span class="w"></span>
+<span class="go">              now</span>
+<span class="go">-------------------------------</span>
+<span class="go"> 2016-03-27 12:54:50.449097+00</span>
+<span class="go">(1 row)</span>
+
+<span class="gp">test=#</span><span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="n">now</span><span class="p">();</span><span class="w"></span>
+<span class="go">              now</span>
+<span class="go">-------------------------------</span>
+<span class="go"> 2016-03-27 12:58:52.217013+00</span>
+<span class="go">(1 row)</span>
+</code></pre></div>
+
+<p>But what is happens if we execute it inside of a transaction:</p>
+<div class="highlight"><pre><span></span><code><span class="gp">test=#</span><span class="w"> </span><span class="k">BEGIN</span><span class="p">;</span><span class="w"></span>
+<span class="go">BEGIN</span>
+
+<span class="gp">test=#</span><span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="n">now</span><span class="p">();</span><span class="w"></span>
+<span class="go">              now</span>
+<span class="go">-------------------------------</span>
+<span class="go"> 2016-03-27 12:59:41.852762+00</span>
+<span class="go">(1 row)</span>
+
+<span class="gp">test=#</span><span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="n">now</span><span class="p">();</span><span class="w"></span>
+<span class="go">              now</span>
+<span class="go">-------------------------------</span>
+<span class="go"> 2016-03-27 12:59:41.852762+00</span>
+<span class="go">(1 row)</span>
+
+<span class="gp">test=#</span><span class="w"> </span><span class="k">COMMIT</span><span class="p">;</span><span class="w"></span>
+<span class="go">COMMIT</span>
+</code></pre></div>
+
+<p>Surprised?? This is happens because <code>now()</code> function always returns the transaction
+timestamp and the first example works because the statements are executed in an
+implicit transaction if no explicit transaction is open.</p>
+<p>If you need accurate timestamp, you should use <code>clock_timestamp()</code> function for
+that purpose:</p>
+<div class="highlight"><pre><span></span><code><span class="gp">test=#</span><span class="w"> </span><span class="k">BEGIN</span><span class="p">;</span><span class="w"></span>
+<span class="go">BEGIN</span>
+
+<span class="gp">test=#</span><span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="n">clock_timestamp</span><span class="p">();</span><span class="w"></span>
+<span class="go">       clock_timestamp</span>
+<span class="go">-----------------------------</span>
+<span class="go"> 2016-03-27 13:10:15.6477+00</span>
+<span class="go">(1 row)</span>
+
+<span class="gp">test=#</span><span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="n">clock_timestamp</span><span class="p">();</span><span class="w"></span>
+<span class="go">        clock_timestamp</span>
+<span class="go">-------------------------------</span>
+<span class="go"> 2016-03-27 13:10:16.407557+00</span>
+<span class="go">(1 row)</span>
+
+<span class="gp">test=#</span><span class="w"> </span><span class="k">COMMIT</span><span class="p">;</span><span class="w"></span>
+<span class="go">COMMIT</span>
+</code></pre></div>
+
+<p>It always return the current wall-clock time based timestamp.</p>
+<p>Incorrect use of <code>now()</code> function can cause some unexpected situations having not
+monotonically increasing timestamps in log/audit tables (e.g. <a href="http://blog.thefourthparty.com/stopping-time-in-postgresql/">here</a>).</p>
+    </div>
+  </article>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

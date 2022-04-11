@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>niwi.nz : Backup strategies and High Availability with PostgreSQL</title>
+    <meta name=viewport content='width=200, initial-scale=1'>
+
+  <meta name="desciption" content="The first step for high availability is have good backup strategy. There is no silver bullet. Each environment requires ad-hoc strategies depending of various factors like: the size of the database, data criticity, and much others. In this article I will try explain the basic recipe of good practices, and you should adapt it to your needs. Backup strategy There are different backup strategies: SQL Level backup (with pg_dump or pg_dumpall) File System backup (using standard unix tools)..." />
+    <meta name="author" content="Andrey Antukh" />
+
+    <link rel="stylesheet" href="https://www.niwi.nz/theme/css/main.css" />
+
+      <link href="https://www.niwi.nz/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="niwi.nz Atom Feed" />
+
+      <link href="https://www.niwi.nz/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="niwi.nz RSS Feed" />
+
+    <!--[if IE]>
+        <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!--[if lte IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie.css"/>
+        <script src="https://www.niwi.nz/js/IE8.js" type="text/javascript"></script>
+    <![endif]-->
+
+    <!--[if lt IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie6.css"/>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div id="wrap">
+      <div id="container">
+
+        <div class="entry">
+  <header>
+    <a href="https://www.niwi.nz"><small>(return to home)</small></a>
+    <h1>
+      <a href="https://www.niwi.nz/drafts/backup-strategy-and-high-availability-with-postgresql.html" id="page-title">Backup strategies and High Availability with PostgreSQL</a>
+    </h1>
+    <div class="article-meta">
+        <small class="time">
+          Date:
+          <time datetime="2014-10-25T00:00:00+00:00">
+            Sat 25 October 2014
+          </time>
+        </small>
+      <br />
+      <small class="tags">
+        Tags:
+          <a href="https://www.niwi.nz/tag/postgresql.html">postgresql,           </a>
+          <a href="https://www.niwi.nz/tag/backup.html">backup,           </a>
+          <a href="https://www.niwi.nz/tag/high-availability.html">high-availability          </a>
+      </small>
+
+      <br />
+      <small class="tags">
+        Author:
+          <span>Andrey Antukh</span>      </small>
+    </div>
+  </header>
+  <article>
+    <div id="article-content">
+      <p>The first step for high availability is have good backup strategy.</p>
+<p>There is no silver bullet. Each environment requires ad-hoc strategies depending of various factors
+like: the size of the database, data criticity, and much others. In this article I will try explain
+the basic recipe of good practices, and you should adapt it to your needs.</p>
+<h2>Backup strategy</h2>
+<p>There are different backup strategies:</p>
+<ul>
+<li>SQL Level backup (with <strong>pg_dump</strong> or <strong>pg_dumpall</strong>)</li>
+<li>File System backup (using standard unix tools)</li>
+<li>Continuous Archiving and Point-in-Time Recovery (PITR)</li>
+</ul>
+<h3>SQL Level Backup</h3>
+<p>This is the most basic way to make a consistent backup of your database or the entire cluser.</p>
+<div class="highlight"><pre><span></span><code>pg_dump -O -Fc -f database.dump yourdatabasename
+</code></pre></div>
+
+<p>This command uses the postgresql custom format (officially recommended by postgresql) that
+automatically commpress the result.</p>
+<p>You can restore the backup using the <strong>pg_restore</strong> command.</p>
+<div class="highlight"><pre><span></span><code>pg_restore -d yourdatabasename ./database.dump
+</code></pre></div>
+
+<p>This method is really simple and useful where the database size is small and allows constantly
+dumps. But when the database size grows, this method turns to be not feasible, and you should consider
+using an other method.</p>
+<p>Additionally <strong>pg_dump</strong> is a greet tool for detect corruption.</p>
+<h3>Continuos Wal Archiving</h3>
+<p>In summary, this method allows store incremental backups.</p>
+<p>But in detail this has more advantatges:</p>
+<ul>
+<li>It allows point in time recovery (last 20min as example).</li>
+<li>It allows setup standby servers for quick failover.</li>
+<li>It allows make complete backups less frecuently.</li>
+<li>It allows use easy filesystem snapshots (zfs).</li>
+</ul>
+<p>Backups using "Continuous wal archiving" needs two things to be done:</p>
+<ul>
+<li>Initial standalone backup (using <strong>pg_basebackup</strong>)</li>
+<li>All WAL files created after backup.</li>
+</ul>
+<p>As first step for making it working, is change the postgresql configuration.</p>
+<p>Set this options in your <strong>postgresql.conf</strong>:</p>
+<div class="highlight"><pre><span></span><code>wal_level = archive
+max_wal_senders = 24
+wal_keep_segments = 16
+
+archive_mode = on
+archive_command = &#39;test ! -f /mnt/archivedir/%f &amp;&amp; cp %p /mnt/server/%f&#39;
+</code></pre></div>
+
+<p>That means each option:</p>
+<ul>
+<li><em>wal_level</em> specifies the level for wal file creation. If you want archive them, you should put <strong>archve</strong> or <strong>hot_standby</strong></li>
+<li><em>max_wal_senders</em> specifies to how much replication connections is allowed (mainly used by <strong>pg_basebackup</strong>)</li>
+<li><em>wal_keep_segments</em> specifies the minimum number of past log file segments kept in the pg_xlog directory.</li>
+<li><em>archive_mode</em> activates the archive mode</li>
+<li><em>archive_command</em> specifies a command for execute for archive one wal file.</li>
+</ul>
+<p>Is strongly recommended archive wal files in different phisical disk and using commands that can guaranty the atomicity. A great example of bad command is using <strong>scp</strong>, beacuse it is not atomic.</p>
+<p>The second step is allow replication connections, for it, you should enable them in <strong>pg_hba.conf</strong> file:</p>
+<div class="highlight"><pre><span></span><code>local replication postgres trust
+</code></pre></div>
+
+<p>This assumes that replication connectons will be made from local. Replication connections in this case are used mainly by <strong>pg_basebackup</strong> tool.</p>
+<p>Let start making a first complete standalone backup:</p>
+<div class="highlight"><pre><span></span><code>pg_basebackup -D backupdir -U postgres -P -x -c fast
+</code></pre></div>
+
+<p>After executing that command, you should have in <em>backupdir</em> a complete santandalone backup.</p>
+<p>You should keep all archived wal files that are created after backup. If something happens, and
+you are forced to restore backup, you should follow the next steps:</p>
+<ul>
+<li>Restore the last base backup.</li>
+<li>Add the recovery.conf file and add proper <strong>restore_command</strong> option (with something like: <code>'cp /mnt/archivedir/%f %p'</code> as value)</li>
+<li>Start the server.</li>
+</ul>
+<p>When server going up, it will try apply all wal files found in the archive, making as a result the
+completelly restored server.</p>
+<h2>High Avalability</h2>
+<p>For guaranty the minimum time of downtime you should can restore a database server in very little time. And if you have database with huge amount of data, restoring a backup can be very slow. Obviously it depends on the backup method but it's usually slow.</p>
+<p>For solve it you have different solutions:</p>
+<ul>
+<li>Log shipping and Standby servers using wal file archives.</li>
+<li>Log shipping and Standby server using asynchronous streaming replication.</li>
+<li>Log shipping and Standby server using synchronous streaming replication.</li>
+</ul>
+<p>In this article, only asynchronous and synchronous streaming replication will be covered.</p>
+<h3>Asynchronous Replication</h3>
+<p>Let start configuring the master server. Make sure that these parameters are set in <strong>postgresql.conf</strong>:</p>
+<div class="highlight"><pre><span></span><code>listen_addresses = &#39;*&#39;
+wal_level = archive
+max_wal_senders = 24
+wal_keep_segments = 16
+</code></pre></div>
+
+<p>Archiving is not mandatory for this case, but is very recommended.</p>
+<p>This also requires the replication entry in <strong>pg_hba.conf</strong> file but in this case with an
+other entry allowing connections from outside the database server:</p>
+<div class="highlight"><pre><span></span><code>local replication postgres trust
+host replication postgres 192.168.1.0/24 trust
+</code></pre></div>
+
+<p>In this example, we are using <strong>trust</strong> for make things easy, but in production is strongly recomended setup proper authentication.</p>
+<p>Now having the server configured, follow the same step for make a base backup, but from an other server and and additional parameter:</p>
+<div class="highlight"><pre><span></span><code>pg_basebackup -D backupdir -U postgres -P -x -c fast -R
+</code></pre></div>
+
+<p>After this, start the server.</p>
+    </div>
+  </article>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

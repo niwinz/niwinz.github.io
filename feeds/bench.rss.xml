@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0"><channel><title>niwi.nz - bench</title><link>https://www.niwi.nz/</link><description></description><lastBuildDate>Mon, 18 Feb 2013 00:00:00 +0000</lastBuildDate><item><title>Python and Node performance tests</title><link>https://www.niwi.nz/2013/02/18/python-node-http-performance/</link><description>&lt;p&gt;This is another benchmark for view performance of python on the web. The main idea is
+to see python3 performance compared to python2 serving simple wsgi app.&lt;/p&gt;
+&lt;p&gt;Also compared with nodejs performance, performing the same task.&lt;/p&gt;
+&lt;p&gt;For benchmarks are used these software:&lt;/p&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;uwsgi-1.4.5 + python-3.3.0&lt;/li&gt;
+&lt;li&gt;uwsgi-1.4 …&lt;/li&gt;&lt;/ul&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Andrey Antukh</dc:creator><pubDate>Mon, 18 Feb 2013 00:00:00 +0000</pubDate><guid isPermaLink="false">tag:www.niwi.nz,2013-02-18:/2013/02/18/python-node-http-performance/</guid><category>bench</category><category>python</category><category>wsgi</category><category>nodejs</category></item></channel></rss>

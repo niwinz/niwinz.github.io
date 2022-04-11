@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>niwi.nz : PostgreSQL json field with clojure and jdbc</title>
+    <meta name=viewport content='width=200, initial-scale=1'>
+
+  <meta name="desciption" content="PostgreSQL have awesome types like json or hstore, but how we can use them with clojure and jdbc? It is very simple! clojure.jdbc exposes some protocols (jdbc.types/ISQLType and jdbc.types/ISQLResultSetReadColumn) to extend user types making them compatible with jdbc in both directions. The first handles conversion from user type to jdbc compatible type and the second handles the backward process (from sql/jdbc type to user type). This is a working example of implementing these protocols for..." />
+    <meta name="author" content="Andrey Antukh" />
+
+    <link rel="stylesheet" href="https://www.niwi.nz/theme/css/main.css" />
+
+      <link href="https://www.niwi.nz/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="niwi.nz Atom Feed" />
+
+      <link href="https://www.niwi.nz/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="niwi.nz RSS Feed" />
+
+    <!--[if IE]>
+        <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!--[if lte IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie.css"/>
+        <script src="https://www.niwi.nz/js/IE8.js" type="text/javascript"></script>
+    <![endif]-->
+
+    <!--[if lt IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie6.css"/>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div id="wrap">
+      <div id="container">
+
+        <div class="entry">
+  <header>
+    <a href="https://www.niwi.nz"><small>(return to home)</small></a>
+    <h1>
+      <a href="https://www.niwi.nz/2014/04/13/postgresql-json-field-with-clojure-and-jdbc/" id="page-title">PostgreSQL json field with clojure and jdbc</a>
+    </h1>
+    <div class="article-meta">
+        <small class="time">
+          Date:
+          <time datetime="2014-04-13T00:00:00+00:00">
+            Sun 13 April 2014
+          </time>
+        </small>
+      <br />
+      <small class="tags">
+        Tags:
+          <a href="https://www.niwi.nz/tag/postgresql.html">postgresql,           </a>
+          <a href="https://www.niwi.nz/tag/clojure.html">clojure,           </a>
+          <a href="https://www.niwi.nz/tag/jdbc.html">jdbc,           </a>
+          <a href="https://www.niwi.nz/tag/json.html">json          </a>
+      </small>
+
+      <br />
+      <small class="tags">
+        Author:
+          <span>Andrey Antukh</span>      </small>
+    </div>
+  </header>
+  <article>
+    <div id="article-content">
+      <p>PostgreSQL have awesome types like <strong>json</strong> or <strong>hstore</strong>, but how we can use them with clojure
+and jdbc?</p>
+<p>It is very simple!</p>
+<p><strong>clojure.jdbc</strong> exposes some protocols (<code>jdbc.types/ISQLType</code> and <code>jdbc.types/ISQLResultSetReadColumn</code>)
+to extend user types making them compatible with jdbc in both directions.</p>
+<p>The first handles conversion from user type to jdbc compatible type and the second handles the
+backward process (from sql/jdbc type to user type).</p>
+<p>This is a working example of implementing these protocols for json support:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="nf">require</span> <span class="o">&#39;</span><span class="p">[</span><span class="nv">jdbc.types</span> <span class="ss">:as</span> <span class="nv">types</span><span class="p">])</span>
+
+<span class="c1">;; Import class that postgresql jdbc implementation</span>
+<span class="c1">;; uses for handle custom types.</span>
+<span class="p">(</span><span class="nb">import </span><span class="ss">&#39;org.postgresql.util.PGobject</span><span class="p">)</span>
+
+<span class="c1">;; Json library for clojure: https://github.com/dakrone/cheshire</span>
+<span class="p">(</span><span class="nf">require</span> <span class="o">&#39;</span><span class="p">[</span><span class="nv">cheshire.core</span> <span class="ss">:as</span> <span class="nv">json</span><span class="p">])</span>
+
+<span class="c1">;; ISQLType handles a conversion from user type to jdbc compatible</span>
+<span class="c1">;; types. In this case we are extending any implementation of clojure</span>
+<span class="c1">;; IPersistentMap (for convert it to json string).</span>
+<span class="p">(</span><span class="nf">extend-protocol</span> <span class="nv">types/ISQLType</span>
+  <span class="nv">clojure.lang.IPersistentMap</span>
+
+  <span class="c1">;; This method, receives a instance of IPersistentMap and</span>
+  <span class="c1">;; active connection, and return jdbc compatible type.</span>
+  <span class="p">(</span><span class="nf">as-sql-type</span> <span class="p">[</span><span class="nv">self</span> <span class="nv">conn</span><span class="p">]</span>
+    <span class="p">(</span><span class="nb">doto </span><span class="p">(</span><span class="nf">PGobject.</span><span class="p">)</span>
+      <span class="p">(</span><span class="nf">.setType</span> <span class="s">&quot;json&quot;</span><span class="p">)</span>
+      <span class="p">(</span><span class="nf">.setValue</span> <span class="p">(</span><span class="nf">json/generate-string</span> <span class="nv">self</span><span class="p">))))</span>
+
+  <span class="c1">;; This method handles assignation of now converted type</span>
+  <span class="c1">;; to jdbc statement instance.</span>
+  <span class="p">(</span><span class="nf">set-stmt-parameter!</span> <span class="p">[</span><span class="nv">self</span> <span class="nv">conn</span> <span class="nv">stmt</span> <span class="nv">index</span><span class="p">]</span>
+    <span class="p">(</span><span class="nf">.setObject</span> <span class="nv">stmt</span> <span class="nb">index </span><span class="p">(</span><span class="nf">types/as-sql-type</span> <span class="nv">self</span> <span class="nv">conn</span><span class="p">))))</span>
+
+<span class="c1">;; ISQLResultSetReadColumn handles the conversion from sql types</span>
+<span class="c1">;; to user types. In this case, we are extending PGobject for handle</span>
+<span class="c1">;; json field conversions to clojure hash-map.</span>
+<span class="p">(</span><span class="nf">extend-protocol</span> <span class="nv">types/ISQLResultSetReadColumn</span>
+  <span class="nv">PGobject</span>
+  <span class="p">(</span><span class="nf">from-sql-type</span> <span class="p">[</span><span class="nv">pgobj</span> <span class="nv">conn</span> <span class="nv">metadata</span> <span class="nv">i</span><span class="p">]</span>
+    <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">type</span>  <span class="p">(</span><span class="nf">.getType</span> <span class="nv">pgobj</span><span class="p">)</span>
+          <span class="nv">value</span> <span class="p">(</span><span class="nf">.getValue</span> <span class="nv">pgobj</span><span class="p">)]</span>
+      <span class="p">(</span><span class="nf">case</span> <span class="nv">type</span>
+        <span class="s">&quot;json&quot;</span> <span class="p">(</span><span class="nf">json/parse-string</span> <span class="nv">value</span><span class="p">)</span>
+        <span class="ss">:else</span> <span class="nv">value</span><span class="p">))))</span>
+</code></pre></div>
+
+<p>Now having the corresponding type extended, you should be able to use json field without any problem.
+This is a little example:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="nf">require</span> <span class="o">&#39;</span><span class="p">[</span><span class="nv">jdbc</span> <span class="ss">:as</span> <span class="nv">j</span><span class="p">])</span>
+
+<span class="p">(</span><span class="k">def </span><span class="nv">dbspec</span> <span class="s">&quot;postgresql://localhost/test&quot;</span><span class="p">)</span>
+
+<span class="c1">;; Creating table and inserting a new row, using clojure plain</span>
+<span class="c1">;; hash-map as parameter without any special conversion.</span>
+<span class="p">(</span><span class="nf">j/with-connection</span> <span class="p">[</span><span class="nv">conn</span> <span class="nv">dbspec</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">j/execute!</span> <span class="nv">conn</span> <span class="s">&quot;CREATE TABLE example (data json);&quot;</span><span class="p">)</span>
+  <span class="p">(</span><span class="nf">j/execute-prepared!</span> <span class="s">&quot;INSERT INTO example (data) VALUES (?);&quot;</span> <span class="p">[{</span><span class="ss">:foo</span> <span class="s">&quot;bar&quot;</span><span class="p">}]))</span>
+
+<span class="c1">;; Now, you can query previously inserted data</span>
+<span class="p">(</span><span class="nf">j/with-connection</span> <span class="p">[</span><span class="nv">conn</span> <span class="nv">dbspec</span><span class="p">]</span>
+   <span class="p">(</span><span class="nb">println </span><span class="p">(</span><span class="nb">-&gt; </span><span class="p">(</span><span class="nf">j/query</span> <span class="nv">conn</span> <span class="s">&quot;select * from example;&quot;</span><span class="p">)</span>
+                <span class="p">(</span><span class="nf">first</span><span class="p">))))</span>
+<span class="c1">;; =&gt; {&quot;foo&quot; &quot;bar&quot;}</span>
+</code></pre></div>
+
+<p>This is a list of libraries used for this examples:</p>
+<ul>
+<li><a href="https://github.com/niwibe/clojure.jdbc">https://github.com/niwibe/clojure.jdbc</a></li>
+<li><a href="https://github.com/dakrone/cheshire">https://github.com/dakrone/cheshire</a></li>
+</ul>
+    </div>
+  </article>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

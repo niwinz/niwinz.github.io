@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>niwi.nz : Redis, una alternativa a memcached.</title>
+    <meta name=viewport content='width=200, initial-scale=1'>
+
+  <meta name="desciption" content="Este articulo esta basado completamente en http://trespams.com/2011/08/04/redis-vs-memcached/. Sabemos bien, que hoy en día memcached es casi un estándar en plataformas web, pero no hace mucho ha salido un competidor, y no precisamente con pocas ganas de pelear. En este caso, estamos hablando de redis. Redis, es una base de datos orientada a clave valor, con soporte de distintos tipos de datos, que a igual que memcached puede ofrecer un rendimiento espectacular, sirviendo de backend para..." />
+    <meta name="author" content="Andrey Antukh" />
+
+    <link rel="stylesheet" href="https://www.niwi.nz/theme/css/main.css" />
+
+      <link href="https://www.niwi.nz/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="niwi.nz Atom Feed" />
+
+      <link href="https://www.niwi.nz/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="niwi.nz RSS Feed" />
+
+    <!--[if IE]>
+        <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!--[if lte IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie.css"/>
+        <script src="https://www.niwi.nz/js/IE8.js" type="text/javascript"></script>
+    <![endif]-->
+
+    <!--[if lt IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie6.css"/>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div id="wrap">
+      <div id="container">
+
+        <div class="entry">
+  <header>
+    <a href="https://www.niwi.nz"><small>(return to home)</small></a>
+    <h1>
+      <a href="https://www.niwi.nz/2011/08/08/redis-una-alternativa-a-memcached/" id="page-title">Redis, una alternativa a memcached.</a>
+    </h1>
+    <div class="article-meta">
+        <small class="time">
+          Date:
+          <time datetime="2011-08-08T00:00:00+00:00">
+            Mon 08 August 2011
+          </time>
+        </small>
+      <br />
+      <small class="tags">
+        Tags:
+          <a href="https://www.niwi.nz/tag/python.html">python,           </a>
+          <a href="https://www.niwi.nz/tag/redis.html">redis,           </a>
+          <a href="https://www.niwi.nz/tag/django.html">django          </a>
+      </small>
+
+      <br />
+      <small class="tags">
+        Author:
+          <span>Andrey Antukh</span>      </small>
+    </div>
+  </header>
+  <article>
+    <div id="article-content">
+      <p>Este articulo esta basado completamente en <a href="http://trespams.com/2011/08/04/redis-vs-memcached/">http://trespams.com/2011/08/04/redis-vs-memcached/</a>.</p>
+<p>Sabemos bien, que hoy en día memcached es casi un estándar en plataformas web, pero no hace mucho ha salido un competidor, y no precisamente con pocas ganas de pelear. En este caso, estamos hablando de redis.</p>
+<p>Redis, es una base de datos orientada a clave valor, con soporte de distintos tipos de datos, que a igual que memcached puede ofrecer un rendimiento espectacular, sirviendo de backend para cache, ademas de darnos otras mil posibilidades.</p>
+<p>Pequeña lista de ventajas que aporta redis:</p>
+<ul>
+<li>posibilidad de ver que claves tenemos almacenadas.</li>
+<li>puede ser una base de datos persistente.</li>
+<li>no esta limitado a la memoria, posibilidad de uso de disco.</li>
+<li>replicación master-slave muy simple de configurar.</li>
+<li>distintas bases de datos, con control separado.</li>
+</ul>
+<p>Sabiendo esto y habiendo leído las pruebas de rendimiento del post original, las ventajas son mas que evidentes. Y una de las mas importantes es la persistencia y la granularidad con bases de datos. Ya que de esta manera podemos limpiar una base de datos sin interferir en otra, o una caída no hará que la cache tenga que regenerarse 100% gracias a la persistencia eventual.</p>
+<h3>A Redis cache backend for django</h3>
+<p>Esta es el modulo/backend para django, que permite de una manera simple utilizar el sistema de cache de django con redis como backend.</p>
+<p>Ademas, a la versión original, he agregado nueva funcionalidad, como por ejemplo poder elegir que protocolo usar para la serialización (véase <a href="http://docs.python.org/library/pickle.html"><strong>pickle</strong></a>) como también una app de django para ver el estado de los servidores de cache de redis, teniendo información como la memoria, cpu, uptime, numero de keys, etc...</p>
+<p><a href="https://github.com/niwibe/django-redis">https://github.com/niwibe/django-redis</a></p>
+    </div>
+  </article>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

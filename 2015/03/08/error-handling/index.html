@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>niwi.nz : A little overview of error handling.</title>
+    <meta name=viewport content='width=200, initial-scale=1'>
+
+  <meta name="desciption" content="In this article, I&#39;ll try to make a little overview over different &#34;modern&#34; approaches for error handling and converge to one concrete, that in my opinion is the right way to do it. Exceptions What is an exception? An exception is an event that occurs during the execution of a program that disrupts the normal flow of instructions. Is the most common and accepted way to handling errors in popular and most used languages today is using Exceptions. Exceptions as is is not a bad..." />
+    <meta name="author" content="Andrey Antukh" />
+
+    <link rel="stylesheet" href="https://www.niwi.nz/theme/css/main.css" />
+
+      <link href="https://www.niwi.nz/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="niwi.nz Atom Feed" />
+
+      <link href="https://www.niwi.nz/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="niwi.nz RSS Feed" />
+
+    <!--[if IE]>
+        <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!--[if lte IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie.css"/>
+        <script src="https://www.niwi.nz/js/IE8.js" type="text/javascript"></script>
+    <![endif]-->
+
+    <!--[if lt IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie6.css"/>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div id="wrap">
+      <div id="container">
+
+        <div class="entry">
+  <header>
+    <a href="https://www.niwi.nz"><small>(return to home)</small></a>
+    <h1>
+      <a href="https://www.niwi.nz/2015/03/08/error-handling/" id="page-title">A little overview of error handling.</a>
+    </h1>
+    <div class="article-meta">
+        <small class="time">
+          Date:
+          <time datetime="2015-03-08T00:00:00+00:00">
+            Sun 08 March 2015
+          </time>
+        </small>
+      <br />
+      <small class="tags">
+        Tags:
+          <a href="https://www.niwi.nz/tag/error.html">error,           </a>
+          <a href="https://www.niwi.nz/tag/monad.html">monad,           </a>
+          <a href="https://www.niwi.nz/tag/clojure.html">clojure          </a>
+      </small>
+
+      <br />
+      <small class="tags">
+        Author:
+          <span>Andrey Antukh</span>      </small>
+    </div>
+  </header>
+  <article>
+    <div id="article-content">
+      <p>In this article, I'll try to make a little overview over different "modern" approaches
+for error handling and converge to one concrete, that in my opinion is the right way
+to do it.</p>
+<h2>Exceptions</h2>
+<p>What is an <em>exception</em>? An exception is an event that occurs during the execution of a
+program that disrupts the normal flow of instructions.</p>
+<p>Is the most common and accepted way to handling errors in popular and most used languages
+today is using Exceptions. <em>Exceptions</em> as is is not a bad thing and it has great uses
+cases. But in my opinion, the culture of languages that uses exceptions approach for
+error handling invites to use <em>exceptions</em> as flow control structures or label ordinary
+and expected errors (such as failing open a file) as exceptional situations.</p>
+<p>And if you look back, that approach is very similar to the hated <em>goto</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">read_report_file</span><span class="p">(</span><span class="n">name</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">owner</span><span class="p">:</span><span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Report</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">REPORTS_DIR</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="n">file</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;rt&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">process_file_and_get_report</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">owner</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="n">PermissionDeniend</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">send_notification_about_unauthorized_request</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">owner</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">e</span>
+
+    <span class="k">except</span> <span class="n">FileNotFound</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ReportNotFound</span><span class="p">(</span><span class="s2">&quot;Report file does not exists&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</code></pre></div>
+
+<p>Having this code snippet, you can observe:</p>
+<ul>
+<li>Using exceptions violates the "Single Responsibility Principle". By definition,
+  any function using a try/catch is doing more that one thing at time: domain
+  logic and error handling.</li>
+<li>That approach also violates the open/closed principle. If you want extend error
+  handling, you should touch a function code that also has domain logic.</li>
+</ul>
+<p>Obviously is my opinion, not every one has the same perception when error handling
+is mixed with domain logic.</p>
+<p>Good literature about this:</p>
+<ul>
+<li><a href="http://250bpm.com/blog:4">http://250bpm.com/blog:4</a></li>
+<li><a href="http://stackoverflow.com/questions/1736146/why-is-exception-handling-bad">http://stackoverflow.com/questions/1736146/why-is-exception-handling-bad</a></li>
+<li><a href="http://blogs.atlassian.com/2011/05/exceptions_are_bad/">http://blogs.atlassian.com/2011/05/exceptions_are_bad/</a></li>
+</ul>
+<h2>Null / Optional</h2>
+<p>In multiple situations, return (from function or method) something that can represent
+"Nothing" is more that enough.</p>
+<div class="highlight"><pre><span></span><code><span class="n">SoundCard</span> <span class="n">soundCard</span> <span class="o">=</span> <span class="n">computer</span><span class="o">.</span><span class="na">getSoundCard</span><span class="o">()</span>
+</code></pre></div>
+
+<p>Having this code snippet in mind, we can see that <code>getSoundCard</code> operation has two possible
+return values: sound card instance or some kind of "Nothing" (in case of a computer that doesn't
+have a sound card).</p>
+<p>For this situations, different languages has different approaches. There are languages that
+uses a <code>NULL</code> as value that represents "Nothing". Other languages has an special type commonly
+known as <code>Optional&lt;T&gt;</code>, and others directly does not have <code>NULL</code>.</p>
+<p>Here an example using the classic approach using java:</p>
+<div class="highlight"><pre><span></span><code><span class="n">String</span> <span class="n">version</span> <span class="o">=</span> <span class="s">&quot;UNKNOWN&quot;</span><span class="p">;</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">computer</span> <span class="o">!=</span> <span class="kc">null</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">Soundcard</span> <span class="n">soundcard</span> <span class="o">=</span> <span class="n">computer</span><span class="p">.</span><span class="na">getSoundcard</span><span class="p">();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">soundcard</span> <span class="o">!=</span> <span class="kc">null</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">USB</span> <span class="n">usb</span> <span class="o">=</span> <span class="n">soundcard</span><span class="p">.</span><span class="na">getUSB</span><span class="p">();</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">usb</span> <span class="o">!=</span> <span class="kc">null</span><span class="p">){</span>
+            <span class="n">version</span> <span class="o">=</span> <span class="n">usb</span><span class="p">.</span><span class="na">getVersion</span><span class="p">();</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>Is clearly an approach that not scales very well. The code is already looks ugly and if
+more steps will be added, the situation not will be improved.</p>
+<p>Some languages offers sugar syntax for handling with <code>NULL</code> pointers. Here the groovy
+approach for represent the same code but in more readable syntax:</p>
+<div class="highlight"><pre><span></span><code><span class="n">String</span> <span class="n">version</span> <span class="o">=</span> <span class="n">computer</span><span class="o">?.</span><span class="na">getSoundcard</span><span class="o">()?.</span><span class="na">getUSB</span><span class="o">()?.</span><span class="na">getVersion</span><span class="o">();</span>
+</code></pre></div>
+
+<p>And the same code using clojure:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="nf">some-&gt;</span> <span class="nv">computer</span> <span class="nv">get-sound-card</span> <span class="nv">get-usb</span> <span class="nv">get-version</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Later, modern versions of languages start adding a special type for help handling that
+situations: <code>Optional&lt;T&gt;</code>. Here, you can see the same example but implemented using
+the <em>java8 optional</em> type as return value:</p>
+<div class="highlight"><pre><span></span><code><span class="n">String</span> <span class="n">version</span> <span class="o">=</span> <span class="n">computer</span><span class="p">.</span><span class="na">flatMap</span><span class="p">(</span><span class="n">Computer</span><span class="p">::</span><span class="n">getSoundcard</span><span class="p">)</span>
+                         <span class="p">.</span><span class="na">flatMap</span><span class="p">(</span><span class="n">Soundcard</span><span class="p">::</span><span class="n">getUSB</span><span class="p">)</span>
+                         <span class="p">.</span><span class="na">map</span><span class="p">(</span><span class="n">USB</span><span class="p">::</span><span class="n">getVersion</span><span class="p">)</span>
+                         <span class="p">.</span><span class="na">orElse</span><span class="p">(</span><span class="s">&quot;UNKNOWN&quot;</span><span class="p">);</span>
+</code></pre></div>
+
+<p>It is clearly an improvement, but in my opinion, using function names like <code>map</code> or <code>flatMap</code> for
+compositions like this, is not very semantic.</p>
+<p>In summary:</p>
+<ul>
+<li>Null pointers are usually a source of much problems and should be avoided.</li>
+<li>Some languages has a "safe" way for handling the null pointer, with specific
+  types or syntax abstractions.</li>
+<li>Safe helpers must be used in case you are bound to use null pointers.</li>
+</ul>
+<h2>Errors as value</h2>
+<p>Let start with a mixed way to handle errors. Mixed approach uses something like exceptions
+but instead of raising them, returns them as value.</p>
+<p>This approach can be used in almost all languages, but some languages enforces the usage of
+this approach (golang as example). And this approach has problems from both previously explained
+approaches, and if a language does not have enough expressiveness, the code using this
+error handling approach tends to be tricky.</p>
+<p>Imagine that functions from previous examples, now returns a something like a tuple or
+list with two values, the result and the error.</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_soundcard_usb_version</span><span class="p">(</span><span class="n">computer</span><span class="p">):</span>
+    <span class="n">sound_card</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">get_sound_card</span><span class="p">(</span><span class="n">computer</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+       <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="n">err</span>
+    <span class="n">usb</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">get_usb</span><span class="p">(</span><span class="n">sound_card</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+       <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="n">err</span>
+    <span class="n">version</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">get_version</span><span class="p">(</span><span class="n">usb</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+       <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="n">err</span>
+    <span class="k">return</span> <span class="n">version</span><span class="p">,</span> <span class="kc">None</span>
+</code></pre></div>
+
+<p>Like exceptions, this has mixed domain logic with constant and tedious error handling in the
+same function. Then, languages of lisp family allows create some syntactic sugar, that can convert this
+unexpressive code in something more expressive.</p>
+<p>Here the code for make the syntactic abstraction in clojure:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="kd">defn </span><span class="nv">apply-or-error</span> <span class="p">[</span><span class="nv">f</span> <span class="p">[</span><span class="nb">val </span><span class="nv">err</span><span class="p">]]</span>
+  <span class="p">(</span><span class="k">if </span><span class="p">(</span><span class="nb">nil? </span><span class="nv">err</span><span class="p">)</span>
+    <span class="p">(</span><span class="nf">f</span> <span class="nv">val</span><span class="p">)</span>
+    <span class="p">[</span><span class="nv">nil</span> <span class="nv">err</span><span class="p">]))</span>
+
+<span class="p">(</span><span class="kd">defmacro </span><span class="nv">err-&gt;&gt;</span> <span class="p">[</span><span class="nb">val </span><span class="o">&amp;</span> <span class="nv">fns</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">fns</span> <span class="p">(</span><span class="nb">for </span><span class="p">[</span><span class="nv">f</span> <span class="nv">fns</span><span class="p">]</span> <span class="o">`</span><span class="p">(</span><span class="nf">apply-or-error</span> <span class="o">~</span><span class="nv">f</span><span class="p">))]</span>
+    <span class="o">`</span><span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="p">[</span><span class="o">~</span><span class="nb">val </span><span class="nv">nil</span><span class="p">]</span>
+          <span class="o">~@</span><span class="nv">fns</span><span class="p">)))</span>
+</code></pre></div>
+
+<p>And here, the same example using above syntax sugar:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="kd">defn </span><span class="nv">get-soundcard-usb-version</span>
+  <span class="p">[</span><span class="nv">computer</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">err-&gt;&gt;</span> <span class="nv">computer</span>
+          <span class="nv">get-sound-card</span>
+          <span class="nv">get-usb</span>
+          <span class="nv">get-version</span><span class="p">))</span>
+</code></pre></div>
+
+<p>A little summary:</p>
+<ul>
+<li>If your language allows construct an expesive way to handle, this may be the most expressive one.</li>
+<li>This approach not uses bad practices and not uses the goto.</li>
+<li>Unexpressive languages like golang tends to be completely unnecessary more verbose.</li>
+</ul>
+<h2>Monads as error type</h2>
+<p>Explaining monads I think that is completely out of scope of this article. For people that not known
+the monads and related thing, in our examples it looks to be an lightweight wrapper for return
+values or errors. The main difference with previous example, is that the error logic is found in
+the type and not in the separate ad-hoc functions.</p>
+<p>That approach is the most common in functional languages and haskell encourages this approach. Imagine
+the previous examples, that instead of return a tuple of two values, returns a result wrapped in a
+some kind of wrapper.</p>
+<p>In this case the wrapper is a Either monad that has two constructors: Left and Right. Where Left
+represents a failed operation, and Right represents a successful operation.</p>
+<div class="highlight"><pre><span></span><code><span class="nf">getSoundCardUsbVersion</span><span class="w"> </span><span class="n">computer</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span><span class="w"></span>
+<span class="w">    </span><span class="n">soundCard</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">getSoundCard</span><span class="w"> </span><span class="n">computer</span><span class="w"></span>
+<span class="w">    </span><span class="n">usb</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">getUsb</span><span class="w"> </span><span class="n">soundCard</span><span class="w"></span>
+<span class="w">    </span><span class="n">version</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">getVersion</span><span class="w"> </span><span class="n">usb</span><span class="w"></span>
+<span class="w">    </span><span class="n">return</span><span class="w"> </span><span class="n">version</span><span class="w"></span>
+</code></pre></div>
+
+<p>This code that looks completely procedural, is completely functional and has short-circuiting
+mecanism if one of the operations fails (returning a error wrapped in a Left instance).</p>
+<p>But how it really works? It is very very simple. In previous example we have used lisp macros
+for define an ad-hoc sugar syntax with ad-hoc error handling logic. In this case, the error handling
+logic is defined in the type what we are using as return value: <code>Either</code>.</p>
+<p>And the haskell do notation is a some kind of macro/sugar-syntax. The main difference with that
+sugar syntax and the lisp's above one, is that the do syntax is completely generic and works
+with any type that implements the Monad protocol/type.</p>
+<p>In clojure, we also can use the monadic types for handle errors (
+<a href="https://github.com/funcool/cats">cats</a> library will be used in the following examples)</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="nf">require</span> <span class="o">&#39;</span><span class="p">[</span><span class="nv">cats.core</span> <span class="nv">as</span> <span class="nv">m</span><span class="p">])</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">get-soundcard-usb-version</span>
+  <span class="p">[</span><span class="nv">computer</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">m/mlet</span> <span class="p">[</span><span class="nv">sound-card</span> <span class="p">(</span><span class="nf">get-sound-card</span> <span class="nv">computer</span><span class="p">)</span>
+           <span class="nv">usb</span> <span class="p">(</span><span class="nf">get-usb</span> <span class="nv">sound-card</span><span class="p">)</span>
+           <span class="nv">version</span> <span class="p">(</span><span class="nf">get-version</span> <span class="nv">usb</span><span class="p">)]</span>
+    <span class="p">(</span><span class="nf">m/return</span> <span class="nv">version</span><span class="p">)))</span>
+</code></pre></div>
+
+<p>That code, like the haskell one, short-circuits in case of one of operations returns a value
+that can be treat as failure case.</p>
+<p>This approach in languages like clojure, that not uses monadic error handling as default approach
+may be slightly intrusive, because it obliges that all function used in mlet macro (clojure's do
+notation) return always an instance of monadic type (Left or Right in this case). And is more
+tedious if you are using third party libraries in your domain logic and that third party libraries
+uses exceptions.</p>
+<p>For that cases exists the <em>exception monad</em>, with little sugar syntax for wrap third party libraries
+in a monadic types (wrappers). Imagine that functions used in previous examples are coming
+from third party library and raises an exception in case of error.</p>
+<p>This is the aspect of the previous example with new constrains:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="nf">require</span> <span class="o">&#39;</span><span class="p">[</span><span class="nv">cats.core</span> <span class="nv">as</span> <span class="nv">m</span><span class="p">])</span>
+<span class="p">(</span><span class="nf">require</span> <span class="o">&#39;</span><span class="p">[</span><span class="nv">cats.monad.exception</span> <span class="ss">:as</span> <span class="nv">exc</span><span class="p">])</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">get-soundcard-usb-version</span>
+  <span class="p">[</span><span class="nv">computer</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">m/mlet</span> <span class="p">[</span><span class="nv">sound-card</span> <span class="p">(</span><span class="nf">exc/try-on</span> <span class="p">(</span><span class="nf">get-sound-card</span> <span class="nv">computer</span><span class="p">))</span>
+           <span class="nv">usb</span> <span class="p">(</span><span class="nf">exc/try-on</span> <span class="p">(</span><span class="nf">get-usb</span> <span class="nv">sound-card</span><span class="p">))</span>
+           <span class="nv">version</span> <span class="p">(</span><span class="nf">exc/try-on</span> <span class="p">(</span><span class="nf">get-version</span> <span class="nv">usb</span><span class="p">))]</span>
+    <span class="p">(</span><span class="nf">m/return</span> <span class="nv">version</span><span class="p">)))</span>
+</code></pre></div>
+
+<p>You can see, that in both examples (haskell and clojure) the error handling is completely out
+of domain logic.</p>
+<p>More literature:</p>
+<ul>
+<li><a href="http://adambard.com/blog/acceptable-error-handling-in-clojure/">http://adambard.com/blog/acceptable-error-handling-in-clojure/</a></li>
+<li><a href="http://brehaut.net/blog/2011/error_monads">http://brehaut.net/blog/2011/error_monads</a></li>
+<li><a href="http://yellerapp.com/posts/2014-06-27-api-error-handling.html">http://yellerapp.com/posts/2014-06-27-api-error-handling.html</a></li>
+<li><a href="https://www.fpcomplete.com/school/starting-with-haskell/basics-of-haskell/10_Error_Handling">https://www.fpcomplete.com/school/starting-with-haskell/basics-of-haskell/10_Error_Handling</a></li>
+<li><a href="http://www.lispcast.com/nil-punning">http://www.lispcast.com/nil-punning</a></li>
+<li><a href="http://swannodette.github.io/2013/08/31/asynchronous-error-handling/">http://swannodette.github.io/2013/08/31/asynchronous-error-handling/</a></li>
+<li><a href="http://tersesystems.com/2012/12/27/error-handling-in-scala/">http://tersesystems.com/2012/12/27/error-handling-in-scala/</a></li>
+<li><a href="http://lucumr.pocoo.org/2014/10/16/on-error-handling/">http://lucumr.pocoo.org/2014/10/16/on-error-handling/</a></li>
+<li><a href="http://mauricio.github.io/2014/02/17/scala-either-try-and-the-m-word.html">http://mauricio.github.io/2014/02/17/scala-either-try-and-the-m-word.html</a></li>
+<li><a href="http://danielwestheide.com/blog/2012/12/26/the-neophytes-guide-to-scala-part-6-error-handling-with-try.html">http://danielwestheide.com/blog/2012/12/26/the-neophytes-guide-to-scala-part-6-error-handling-with-try.html</a></li>
+<li><a href="http://java.dzone.com/articles/whats-wrong-java-8-part-iv">http://java.dzone.com/articles/whats-wrong-java-8-part-iv</a></li>
+</ul>
+<h2>Summary</h2>
+<p>In my opinion, monads or something similar is a path for good and safe error handling that
+allows focus on domain logic and not mix it with constant and tedious error handling.</p>
+<p>With that approach you can clearly split and isolate the error handling code from your
+domain logic.</p>
+<p>This is my approach:</p>
+<ul>
+<li>Use Maybe to return optional values.</li>
+<li>Use Either to report expected failure.</li>
+<li>Use Try (Exception monad) for adapt third party libraries.</li>
+<li>Throw Exception to signal unexpected failure in purely functional code.</li>
+</ul>
+    </div>
+  </article>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

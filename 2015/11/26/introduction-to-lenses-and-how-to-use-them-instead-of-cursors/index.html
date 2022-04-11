@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>niwi.nz : Introduction to lenses and how to use them instead of cursors</title>
+    <meta name=viewport content='width=200, initial-scale=1'>
+
+  <meta name="desciption" content="The cursors abstraction is so far the most used approach for delimit the vision of the global state for react components in ClojureScript applications. But that also has a great amount of downsides that should be considered before using it. Here is a little list of the most important for me: Only works with plain data. That makes worse working with own types defined with defrecord and exploit polymorphism using protocols. Only allows visions of the tree behind the current root node. All that..." />
+    <meta name="author" content="Andrey Antukh" />
+
+    <link rel="stylesheet" href="https://www.niwi.nz/theme/css/main.css" />
+
+      <link href="https://www.niwi.nz/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="niwi.nz Atom Feed" />
+
+      <link href="https://www.niwi.nz/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="niwi.nz RSS Feed" />
+
+    <!--[if IE]>
+        <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!--[if lte IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie.css"/>
+        <script src="https://www.niwi.nz/js/IE8.js" type="text/javascript"></script>
+    <![endif]-->
+
+    <!--[if lt IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie6.css"/>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div id="wrap">
+      <div id="container">
+
+        <div class="entry">
+  <header>
+    <a href="https://www.niwi.nz"><small>(return to home)</small></a>
+    <h1>
+      <a href="https://www.niwi.nz/2015/11/26/introduction-to-lenses-and-how-to-use-them-instead-of-cursors/" id="page-title">Introduction to lenses and how to use them instead of cursors</a>
+    </h1>
+    <div class="article-meta">
+        <small class="time">
+          Date:
+          <time datetime="2015-11-26T00:00:00+00:00">
+            Thu 26 November 2015
+          </time>
+        </small>
+      <br />
+      <small class="tags">
+        Tags:
+          <a href="https://www.niwi.nz/tag/clojurescript.html">clojurescript,           </a>
+          <a href="https://www.niwi.nz/tag/state.html">state,           </a>
+          <a href="https://www.niwi.nz/tag/cursors.html">cursors,           </a>
+          <a href="https://www.niwi.nz/tag/reactjs.html">reactjs,           </a>
+          <a href="https://www.niwi.nz/tag/lens.html">lens          </a>
+      </small>
+
+      <br />
+      <small class="tags">
+        Author:
+          <span>Andrey Antukh</span>      </small>
+    </div>
+  </header>
+  <article>
+    <div id="article-content">
+      <p>The cursors abstraction is so far the most used approach for delimit the vision
+of the global state for react components in ClojureScript applications. But that
+also has a great amount of downsides that should be considered before using it.</p>
+<p>Here is a little list of the most important for me:</p>
+<ul>
+<li>Only works with plain data. That makes worse working with own types defined with
+  <strong>defrecord</strong> and exploit polymorphism using <strong>protocols</strong>.</li>
+<li>Only allows visions of the tree behind the current root node.</li>
+</ul>
+<p>All that downsides and surelly other that I have not mentioned here I think
+can be solved replacing cursors with lenses.</p>
+<h3>First steps with lenses</h3>
+<p>Lenses are in fact the generalization of the get, put and data mapping to
+particular part of the data structure. The concept is very similar to the
+cursors but without the main limitation of them.</p>
+<p>The following examples we will use the latest version of <a href="https://github.com/funcool/lentes">lentes</a> and
+if you are in repl just evaluate the following require expression:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="nf">require</span> <span class="o">&#39;</span><span class="p">[</span><span class="nv">lentes.core</span> <span class="ss">:as</span> <span class="nv">l</span><span class="p">])</span>
+</code></pre></div>
+
+<p>Let see a simple example using lenses:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="nf">l/focus</span> <span class="nv">l/fst</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">])</span>
+<span class="c1">;; =&gt; 1</span>
+</code></pre></div>
+
+<p>The <strong>fst</strong> is a predefined lense that just get the first element of the data
+structure. Additionaly to simple focus operation, you can apply some operation
+in place or just put a new value into that position:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="nf">l/over</span> <span class="nv">l/fst</span> <span class="nb">inc </span><span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">])</span>
+<span class="c1">;; =&gt; [2 2 3]</span>
+
+<span class="p">(</span><span class="nf">l/put</span> <span class="nv">l/fst</span> <span class="mi">42</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">])</span>
+<span class="c1">;; =&gt; [42 2 3]</span>
+</code></pre></div>
+
+<p>Also, you can focus some descendent nodes of the associative data structure
+in a similar way as you are doing with cursors:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="nf">l/focus</span> <span class="p">(</span><span class="nf">l/in</span> <span class="p">[</span><span class="ss">:a</span> <span class="ss">:b</span><span class="p">])</span> <span class="p">{</span><span class="ss">:a</span> <span class="p">{</span><span class="ss">:b</span> <span class="p">{</span><span class="ss">:c</span> <span class="mi">1</span> <span class="ss">:d</span> <span class="mi">2</span><span class="p">}}})</span>
+<span class="c1">;; =&gt; {:c 1 :d 2}</span>
+
+<span class="p">(</span><span class="nf">l/over</span> <span class="p">(</span><span class="nf">l/in</span> <span class="p">[</span><span class="ss">:a</span> <span class="ss">:b</span> <span class="ss">:c</span><span class="p">])</span> <span class="nb">inc </span><span class="p">{</span><span class="ss">:a</span> <span class="p">{</span><span class="ss">:b</span> <span class="p">{</span><span class="ss">:c</span> <span class="mi">1</span> <span class="ss">:d</span> <span class="mi">2</span><span class="p">}}})</span>
+<span class="c1">;; =&gt; {:a {:b {:c 2, :d 2}}}</span>
+</code></pre></div>
+
+<p>Or just select some keys:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="k">def </span><span class="nv">lens</span> <span class="p">(</span><span class="nf">l/select-keys</span> <span class="p">[</span><span class="ss">:a</span> <span class="ss">:b</span><span class="p">]))</span>
+
+<span class="p">(</span><span class="nf">l/focus</span> <span class="nv">lens</span> <span class="p">{</span><span class="ss">:a</span> <span class="mi">1</span> <span class="ss">:b</span> <span class="mi">2</span> <span class="ss">:c</span> <span class="mi">3</span> <span class="ss">:d</span> <span class="mi">4</span><span class="p">})</span>
+<span class="c1">;; =&gt; {:a 1, :b 2}</span>
+
+<span class="p">(</span><span class="nf">l/over</span> <span class="nv">lens</span> <span class="o">#</span><span class="p">(</span><span class="nf">update</span> <span class="nv">%</span> <span class="ss">:a</span> <span class="nv">inc</span><span class="p">)</span> <span class="p">{</span><span class="ss">:a</span> <span class="mi">1</span> <span class="ss">:b</span> <span class="mi">2</span> <span class="ss">:c</span> <span class="mi">3</span> <span class="ss">:d</span> <span class="mi">4</span><span class="p">})</span>
+<span class="c1">;; =&gt; {:c 3, :d 4, :a 2, :b 2}</span>
+</code></pre></div>
+
+<p>The most nice thing of the lenses implementation in <a href="https://github.com/funcool/lentes">lentes</a> is that
+them are implemented just using plain functions and them can be composed in the
+same way as <a href="http://clojure.org/transducers">transducers</a> using <strong>comp</strong>:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="k">def </span><span class="nv">xlens</span> <span class="p">(</span><span class="nb">comp </span><span class="nv">l/fst</span> <span class="p">(</span><span class="nf">l/nth</span> <span class="mi">2</span><span class="p">)))</span>
+
+<span class="p">(</span><span class="nf">l/focus</span> <span class="nv">xlens</span> <span class="p">[[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span><span class="p">]</span> <span class="p">[</span><span class="mi">5</span> <span class="mi">6</span> <span class="mi">7</span><span class="p">]])</span>
+<span class="c1">;; =&gt; 3</span>
+
+<span class="p">(</span><span class="nf">l/over</span> <span class="nv">xlens</span> <span class="nb">inc </span><span class="p">[[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span><span class="p">]</span> <span class="p">[</span><span class="mi">5</span> <span class="mi">6</span> <span class="mi">7</span><span class="p">]])</span>
+<span class="c1">;; =&gt; [[1 2 4 4] [5 6 7]]</span>
+</code></pre></div>
+
+<h3>Lenses as cursors replacement</h3>
+<p>The clojurescript applications usually uses a unique global state atom for store
+the entire app state and use cursors for provide a limited vision of the tree.</p>
+<p>The <a href="https://github.com/funcool/lentes">lentes library</a> also comes with facilities to create a focused atoms with
+lenses. Imagine you have this state:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="kd">defrecord </span><span class="nv">A</span> <span class="p">[</span><span class="nv">v</span><span class="p">])</span>
+
+<span class="p">(</span><span class="k">def </span><span class="nv">state</span>
+  <span class="p">(</span><span class="nf">atom</span> <span class="p">{</span><span class="ss">:items</span> <span class="p">[</span><span class="o">#</span><span class="nv">user.A</span><span class="p">{</span><span class="ss">:v</span> <span class="mi">2</span><span class="p">}</span>
+                 <span class="o">#</span><span class="nv">user.A</span><span class="p">{</span><span class="ss">:v</span> <span class="mi">5</span><span class="p">}]}))</span>
+</code></pre></div>
+
+<p>And then, let create a two different focused atoms from the state:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="k">def </span><span class="nv">l1</span> <span class="p">(</span><span class="nf">l/focus-atom</span> <span class="p">(</span><span class="nf">l/in</span> <span class="p">[</span><span class="ss">:items</span> <span class="mi">0</span><span class="p">])</span> <span class="nv">state</span><span class="p">))</span>
+<span class="p">(</span><span class="k">def </span><span class="nv">l2</span> <span class="p">(</span><span class="nf">l/focus-atom</span> <span class="p">(</span><span class="nf">l/in</span> <span class="p">[</span><span class="ss">:items</span> <span class="mi">0</span> <span class="ss">:v</span><span class="p">])</span> <span class="nv">state</span><span class="p">))</span>
+
+<span class="o">@</span><span class="nv">l2</span>
+<span class="c1">;; =&gt; 2</span>
+
+<span class="o">@</span><span class="nv">l1</span>
+<span class="c1">;; =&gt; #user.A{:v 2}</span>
+</code></pre></div>
+
+<p>The focused atom satisfies the atom interface so you can use them like normal
+atoms. The main difference between them is that watchers are not triggered if
+focused value is not changed.</p>
+<p>Here is an example on how you can apply transformations over focused atoms:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="nf">swap!</span> <span class="nv">l2</span> <span class="nv">inc</span><span class="p">)</span>
+
+<span class="o">@</span><span class="nv">l2</span>
+<span class="c1">;; =&gt; 3</span>
+
+<span class="o">@</span><span class="nv">l1</span>
+<span class="c1">;; =&gt; #user.A{:v 3}</span>
+</code></pre></div>
+
+<p>You can observe that you can focus also on portion of records and apply
+transformations over its values. This allows us have atom like visions of the
+global state without any limitations of cursors.</p>
+    </div>
+  </article>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

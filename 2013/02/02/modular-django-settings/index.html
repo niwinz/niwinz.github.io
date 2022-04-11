@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>niwi.nz : Vuelta de tuerca a los settings de django</title>
+    <meta name=viewport content='width=200, initial-scale=1'>
+
+  <meta name="desciption" content="Django, por defecto viene con un unico archivo de configuración: settings.py y para empezar no esta mal. De hecho, considero que el sistema de settings de django es muy bueno y muy comodo. Pero podemos detectar los siguientes problemas: El &#34;template&#34; de un proyecto no esta preparado para cubrir casos complejos, con multiples entornos (preproducción, producción, etc). Como evitar de una manera comoda no meter configuración especifica/personalizada de cada usuario en el control de..." />
+    <meta name="author" content="Andrey Antukh" />
+
+    <link rel="stylesheet" href="https://www.niwi.nz/theme/css/main.css" />
+
+      <link href="https://www.niwi.nz/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="niwi.nz Atom Feed" />
+
+      <link href="https://www.niwi.nz/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="niwi.nz RSS Feed" />
+
+    <!--[if IE]>
+        <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!--[if lte IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie.css"/>
+        <script src="https://www.niwi.nz/js/IE8.js" type="text/javascript"></script>
+    <![endif]-->
+
+    <!--[if lt IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie6.css"/>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div id="wrap">
+      <div id="container">
+
+        <div class="entry">
+  <header>
+    <a href="https://www.niwi.nz"><small>(return to home)</small></a>
+    <h1>
+      <a href="https://www.niwi.nz/2013/02/02/modular-django-settings/" id="page-title">Vuelta de tuerca a los settings de django</a>
+    </h1>
+    <div class="article-meta">
+        <small class="time">
+          Date:
+          <time datetime="2013-02-02T00:00:00+00:00">
+            Sat 02 February 2013
+          </time>
+        </small>
+      <br />
+      <small class="tags">
+        Tags:
+          <a href="https://www.niwi.nz/tag/django.html">django          </a>
+      </small>
+
+      <br />
+      <small class="tags">
+        Author:
+          <span>Andrey Antukh</span>      </small>
+    </div>
+  </header>
+  <article>
+    <div id="article-content">
+      <p>Django, por defecto viene con un unico archivo de configuración: <tt class="docutils literal">settings.py</tt> y  para empezar
+no esta mal. De hecho, considero que el sistema de settings de django es muy bueno y muy comodo.</p>
+<p>Pero podemos detectar los siguientes problemas:</p>
+<ul class="simple">
+<li>El &quot;template&quot; de un proyecto no esta preparado para cubrir casos complejos, con multiples entornos (preproducción, producción, etc).</li>
+<li>Como evitar de una manera comoda no meter configuración especifica/personalizada de cada usuario en el control de versiones.</li>
+<li>Como evitar duplicacion de estructuras de configuración y poder modificar configuracion y no solo sobreescribir.</li>
+</ul>
+<div class="section" id="settings-local-py">
+<h2>settings_local.py</h2>
+<p>La primera iteración, y posiblementa la mas extendida, es crear un fichero <tt class="docutils literal">settings_local.py</tt> al
+mismo nivel que el <tt class="docutils literal">settings.py</tt> y que ese se encargue de importarlo si existiese.</p>
+<p>Algo así como esto:</p>
+<div class="highlight"><pre><span></span><span class="c1"># settings.py</span>
+<span class="c1"># [...]</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">.settings_local</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">pass</span>
+</pre></div>
+<p>En un principio, esta iteracion da solucion a uno de los problemas planteados: evita que las configuración especifica
+del usuario  no vaya al repo. Pero tiene un problema fundamental, solo puedes sobreescribir configuración, pero no
+puedes hacer modificaciones pequeñas y parciales.</p>
+</div>
+<div class="section" id="settings-como-package">
+<h2>Settings como package</h2>
+<p>Despues de varias iteraciones, buscando una organización flexible y modular de settings. He
+llegado a la solución que expondre con un ejemplo. A diferencia de lo anterior, en settings en este
+caso pasa a ser un package de python, es decir un directorio.</p>
+<p>Esta es la estructura:</p>
+<div class="highlight"><pre><span></span><span class="go">./fooproject/settings/__init__.py</span>
+<span class="go">./fooproject/settings/common.py</span>
+<span class="go">./fooproject/settings/development.py</span>
+<span class="go">./fooproject/settings/production.py</span>
+<span class="go">./fooproject/settings/local.py.example</span>
+</pre></div>
+<p><strong>Nota:</strong> Todos estos ficheros deberian estar gestionados por el control de versiones y solo y unicamente <strong>local.py</strong>
+debe ser ignorado, debido a que ahi es donde se colocaria la configuración personalizada de cada developer.</p>
+<p>Este sería el contenido de <tt class="docutils literal">__init__.py</tt>:</p>
+<div class="highlight"><pre><span></span>from __future__ import absolute_import
+import os, sys
+
+try:
+    from .local import *
+except ImportError:
+    pass
+</pre></div>
+<ul class="simple">
+<li><tt class="docutils literal">common.py</tt> contendría el contenido de <tt class="docutils literal">settings.py</tt> estandar.</li>
+<li><tt class="docutils literal">development.py</tt> heredaría todo lo del <tt class="docutils literal">common.py</tt> pero haria las modificaciones especifica para el entorno de desarrollo.</li>
+<li><tt class="docutils literal">production.py</tt> tendria lo mismo que <tt class="docutils literal">development.py</tt> pero para el entorno de producción.</li>
+</ul>
+<p>Aqui los ejemplos del resto de ficheros:</p>
+<div class="highlight"><pre><span></span><span class="c1"># development.py</span>
+<span class="kn">from</span> <span class="nn">.common</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="n">DEBUG</span> <span class="o">=</span> <span class="kc">True</span>
+</pre></div>
+<div class="highlight"><pre><span></span><span class="c1"># production.py</span>
+<span class="kn">from</span> <span class="nn">.common</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="n">DEBUG</span> <span class="o">=</span> <span class="kc">False</span>
+</pre></div>
+<div class="highlight"><pre><span></span><span class="c1"># local.py.example</span>
+<span class="kn">from</span> <span class="nn">.development</span> <span class="kn">import</span> <span class="o">*</span>
+</pre></div>
+<p>Con este sistema, le damos la opcion al usuario de no tener que pasar el parametro --settings a todos
+los comandos de <strong>manage.py</strong> creando el fichero <strong>local.py</strong>. Con este fichero creado, y con lo que
+hemos puesto en el fichero <strong>__init__.py</strong> django podra cargar los settings.</p>
+<p>Si dado el caso en mi entorno preciso otros parametros de conexion a la base de datos, solo tendria que
+modificar mi local.py y añadirle lo siguiente:</p>
+<div class="highlight"><pre><span></span><span class="n">DATABASES</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">][</span><span class="s1">&#39;NAME&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;somepersonaldbname&#39;</span>
+<span class="n">DATABASES</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">][</span><span class="s1">&#39;HOST&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;192.168.1.4&#39;</span>
+</pre></div>
+<p>Y estando con seguridad de que estos cambios nunca llegaran al repo por algun descuido y que solo estoy
+modificando una pequeña parte sin replicar toda la estructura de la configuración.</p>
+<p>Esto realmente es muy util para entornos de desarrollo. Luego, en produccion, no es algo incomodo
+pasar como parametro el settings que se va a usar, por lo que existe dos opciones, crear <strong>local.py</strong>
+o especificar el modulo de settings a usar mediante el parametro <strong>--settings</strong>.</p>
+<p>Con este sistema tenemos una manera flexible de tener settings locales fuera del repositorio y un sistema
+modular con &quot;herencia&quot; de settings, evitando la duplicación de los mismos.</p>
+<p>Ejemplo:</p>
+<div class="highlight"><pre><span></span><span class="gp">$ </span>gunicorn_django --settings<span class="o">=</span><span class="s2">&quot;projectname.settings.production&quot;</span> -w <span class="m">3</span>
+</pre></div>
+</div>
+
+    </div>
+  </article>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

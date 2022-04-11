@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>niwi.nz : Boost.Python converter for C++11 tuple.</title>
+    <meta name=viewport content='width=200, initial-scale=1'>
+
+  <meta name="desciption" content="With c++11 certain improvements have been introduced, some improvements are for language and some for the standard library. One of the interesting things is the library of tuples. With tuples can define fixed-size containers with heterogeneous types. Boost.Python by default no have automatic conversion to C++11 tuple, and here an example of how to implement it. // Compile with: // clang++ -std=c++11 -shared -l boost_python3 -I /usr/include/python3.2mu -fPIC -o bptuple.so tuple-test.cpp..." />
+    <meta name="author" content="Andrey Antukh" />
+
+    <link rel="stylesheet" href="https://www.niwi.nz/theme/css/main.css" />
+
+      <link href="https://www.niwi.nz/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="niwi.nz Atom Feed" />
+
+      <link href="https://www.niwi.nz/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="niwi.nz RSS Feed" />
+
+    <!--[if IE]>
+        <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!--[if lte IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie.css"/>
+        <script src="https://www.niwi.nz/js/IE8.js" type="text/javascript"></script>
+    <![endif]-->
+
+    <!--[if lt IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie6.css"/>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div id="wrap">
+      <div id="container">
+
+        <div class="entry">
+  <header>
+    <a href="https://www.niwi.nz"><small>(return to home)</small></a>
+    <h1>
+      <a href="https://www.niwi.nz/2012/09/15/boost.python-convertes-for-cpp11-tuple/" id="page-title">Boost.Python converter for C++11 tuple.</a>
+    </h1>
+    <div class="article-meta">
+        <small class="time">
+          Date:
+          <time datetime="2012-09-15T00:00:00+00:00">
+            Sat 15 September 2012
+          </time>
+        </small>
+      <br />
+      <small class="tags">
+        Tags:
+          <a href="https://www.niwi.nz/tag/cpp.html">cpp,           </a>
+          <a href="https://www.niwi.nz/tag/cpp11.html">cpp11,           </a>
+          <a href="https://www.niwi.nz/tag/python.html">python          </a>
+      </small>
+
+      <br />
+      <small class="tags">
+        Author:
+          <span>Andrey Antukh</span>      </small>
+    </div>
+  </header>
+  <article>
+    <div id="article-content">
+      <p>With c++11 certain improvements have been introduced, some improvements are for language and some for the standard library. One of the interesting things is the library of tuples.</p>
+<p>With tuples can define fixed-size containers with heterogeneous types. Boost.Python by default no have automatic conversion to C++11 tuple, and here an example of how to implement it.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">// Compile with:</span>
+<span class="c1">// clang++ -std=c++11 -shared -l boost_python3 -I /usr/include/python3.2mu -fPIC -o bptuple.so tuple-test.cpp</span>
+
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;tuple&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;boost/python.hpp&gt;</span><span class="cp"></span>
+
+<span class="k">namespace</span><span class="w"> </span><span class="nn">py</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">boost</span><span class="o">::</span><span class="nn">python</span><span class="p">;</span><span class="w"></span>
+
+<span class="k">using</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">;</span><span class="w"></span>
+
+<span class="k">template</span><span class="o">&lt;</span><span class="kt">int</span><span class="w"> </span><span class="p">...</span><span class="o">&gt;</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">seq</span><span class="p">{};</span><span class="w"></span>
+<span class="k">template</span><span class="o">&lt;</span><span class="kt">int</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="p">...</span><span class="n">S</span><span class="o">&gt;</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">gens</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">gens</span><span class="o">&lt;</span><span class="n">N</span><span class="mi">-1</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="mi">-1</span><span class="p">,</span><span class="w"> </span><span class="n">S</span><span class="p">...</span><span class="o">&gt;</span><span class="p">{};</span><span class="w"></span>
+<span class="k">template</span><span class="o">&lt;</span><span class="kt">int</span><span class="w"> </span><span class="p">...</span><span class="n">S</span><span class="o">&gt;</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">gens</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">S</span><span class="p">...</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="k">typedef</span><span class="w"> </span><span class="n">seq</span><span class="o">&lt;</span><span class="n">S</span><span class="p">...</span><span class="o">&gt;</span><span class="w"> </span><span class="n">type</span><span class="p">;};</span><span class="w"></span>
+
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="p">...</span><span class="n">Args</span><span class="o">&gt;</span><span class="w"></span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">cpptuple2pytuple_wrapper</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Args</span><span class="p">...</span><span class="o">&gt;</span><span class="w"> </span><span class="n">params</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">cpptuple2pytuple_wrapper</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Args</span><span class="p">...</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">_params</span><span class="p">)</span><span class="o">:</span><span class="n">params</span><span class="p">(</span><span class="n">_params</span><span class="p">){}</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">py</span><span class="o">::</span><span class="n">tuple</span><span class="w"> </span><span class="n">delayed_dispatch</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">callFunc</span><span class="p">(</span><span class="k">typename</span><span class="w"> </span><span class="nc">gens</span><span class="o">&lt;</span><span class="k">sizeof</span><span class="p">...(</span><span class="n">Args</span><span class="p">)</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">());</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">template</span><span class="o">&lt;</span><span class="kt">int</span><span class="w"> </span><span class="p">...</span><span class="n">S</span><span class="o">&gt;</span><span class="w"></span>
+<span class="w">    </span><span class="n">py</span><span class="o">::</span><span class="n">tuple</span><span class="w"> </span><span class="n">callFunc</span><span class="p">(</span><span class="n">seq</span><span class="o">&lt;</span><span class="n">S</span><span class="p">...</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">py</span><span class="o">::</span><span class="n">make_tuple</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="n">S</span><span class="o">&gt;</span><span class="p">(</span><span class="n">params</span><span class="p">)</span><span class="w"> </span><span class="p">...);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="p">...</span><span class="n">Args</span><span class="o">&gt;</span><span class="w"></span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">pytuple2cpptuple_wrapper</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">py</span><span class="o">::</span><span class="n">tuple</span><span class="w"> </span><span class="n">params</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">pytuple2cpptuple_wrapper</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">py</span><span class="o">::</span><span class="n">tuple</span><span class="o">&amp;</span><span class="w"> </span><span class="n">_params</span><span class="p">)</span><span class="o">:</span><span class="n">params</span><span class="p">(</span><span class="n">_params</span><span class="p">){}</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Args</span><span class="p">...</span><span class="o">&gt;</span><span class="w"> </span><span class="n">delayed_dispatch</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">callFunc</span><span class="p">(</span><span class="k">typename</span><span class="w"> </span><span class="nc">gens</span><span class="o">&lt;</span><span class="k">sizeof</span><span class="p">...(</span><span class="n">Args</span><span class="p">)</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">());</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">template</span><span class="o">&lt;</span><span class="kt">int</span><span class="w"> </span><span class="p">...</span><span class="n">S</span><span class="o">&gt;</span><span class="w"></span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Args</span><span class="p">...</span><span class="o">&gt;</span><span class="w"> </span><span class="n">callFunc</span><span class="p">(</span><span class="n">seq</span><span class="o">&lt;</span><span class="n">S</span><span class="p">...</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">make_tuple</span><span class="p">((</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="n">Args</span><span class="o">&gt;</span><span class="p">(</span><span class="n">py</span><span class="o">::</span><span class="n">extract</span><span class="o">&lt;</span><span class="n">Args</span><span class="o">&gt;</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="n">S</span><span class="p">])))...);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="c1">// Convert (C++) tuple to (Python) tuple as PyObject*.</span>
+<span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="n">Args</span><span class="o">&gt;</span><span class="w"> </span><span class="n">PyObject</span><span class="o">*</span><span class="w"> </span><span class="n">cpptuple2pytuple</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Args</span><span class="p">...</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">t</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">cpptuple2pytuple_wrapper</span><span class="o">&lt;</span><span class="n">Args</span><span class="p">...</span><span class="o">&gt;</span><span class="w"> </span><span class="n">wrapper</span><span class="p">(</span><span class="n">t</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">py</span><span class="o">::</span><span class="n">tuple</span><span class="w"> </span><span class="n">bpt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wrapper</span><span class="p">.</span><span class="n">delayed_dispatch</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">py</span><span class="o">::</span><span class="n">incref</span><span class="p">(</span><span class="n">py</span><span class="o">::</span><span class="n">object</span><span class="p">(</span><span class="n">bpt</span><span class="p">).</span><span class="n">ptr</span><span class="p">());</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="c1">// Convert (Python) tuple to (C++) tuple.</span>
+<span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="n">Args</span><span class="o">&gt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Args</span><span class="p">...</span><span class="o">&gt;</span><span class="w"> </span><span class="n">pytuple2cpptuple</span><span class="p">(</span><span class="n">PyObject</span><span class="o">*</span><span class="w"> </span><span class="n">obj</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">py</span><span class="o">::</span><span class="n">tuple</span><span class="w"> </span><span class="nf">tup</span><span class="p">(</span><span class="n">py</span><span class="o">::</span><span class="n">borrowed</span><span class="p">(</span><span class="n">obj</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="n">pytuple2cpptuple_wrapper</span><span class="o">&lt;</span><span class="n">Args</span><span class="p">...</span><span class="o">&gt;</span><span class="w"> </span><span class="n">wrapper</span><span class="p">(</span><span class="n">tup</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Args</span><span class="p">...</span><span class="o">&gt;</span><span class="w"> </span><span class="n">bpt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wrapper</span><span class="p">.</span><span class="n">delayed_dispatch</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">bpt</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="n">Args</span><span class="o">&gt;</span><span class="w"></span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">cpptuple_to_python_tuple</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="n">PyObject</span><span class="o">*</span><span class="w"> </span><span class="nf">convert</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Args</span><span class="p">...</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">t</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">cpptuple2pytuple</span><span class="o">&lt;</span><span class="n">Args</span><span class="p">...</span><span class="o">&gt;</span><span class="p">(</span><span class="n">t</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="n">Args</span><span class="o">&gt;</span><span class="w"></span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">cpptuple_from_python_tuple</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">cpptuple_from_python_tuple</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">py</span><span class="o">::</span><span class="n">converter</span><span class="o">::</span><span class="n">registry</span><span class="o">::</span><span class="n">push_back</span><span class="p">(</span><span class="o">&amp;</span><span class="n">convertible</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">construct</span><span class="p">,</span><span class="w"> </span><span class="n">py</span><span class="o">::</span><span class="n">type_id</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Args</span><span class="p">...</span><span class="o">&gt;</span><span class="w"> </span><span class="o">&gt;</span><span class="p">());</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">convertible</span><span class="p">(</span><span class="n">PyObject</span><span class="o">*</span><span class="w"> </span><span class="n">obj_ptr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">PyTuple_CheckExact</span><span class="p">(</span><span class="n">obj_ptr</span><span class="p">))</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">obj_ptr</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">construct</span><span class="p">(</span><span class="n">PyObject</span><span class="o">*</span><span class="w"> </span><span class="n">obj_ptr</span><span class="p">,</span><span class="w"> </span><span class="n">py</span><span class="o">::</span><span class="n">converter</span><span class="o">::</span><span class="n">rvalue_from_python_stage1_data</span><span class="o">*</span><span class="w"> </span><span class="n">data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">storage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">((</span><span class="n">py</span><span class="o">::</span><span class="n">converter</span><span class="o">::</span><span class="n">rvalue_from_python_storage</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Args</span><span class="p">...</span><span class="o">&gt;</span><span class="w"> </span><span class="o">&gt;*</span><span class="p">)</span><span class="n">data</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">storage</span><span class="p">.</span><span class="n">bytes</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">new</span><span class="w"> </span><span class="p">(</span><span class="n">storage</span><span class="p">)</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Args</span><span class="p">...</span><span class="o">&gt;</span><span class="p">(</span><span class="n">pytuple2cpptuple</span><span class="o">&lt;</span><span class="n">Args</span><span class="p">...</span><span class="o">&gt;</span><span class="p">(</span><span class="n">obj_ptr</span><span class="p">));</span><span class="w"></span>
+<span class="w">        </span><span class="n">data</span><span class="o">-&gt;</span><span class="n">convertible</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">storage</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="p">...</span><span class="n">Args</span><span class="o">&gt;</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">create_tuple_converter</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">py</span><span class="o">::</span><span class="n">to_python_converter</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Args</span><span class="p">...</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">cpptuple_to_python_tuple</span><span class="o">&lt;</span><span class="n">Args</span><span class="p">...</span><span class="o">&gt;</span><span class="w"> </span><span class="o">&gt;</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="n">cpptuple_from_python_tuple</span><span class="o">&lt;</span><span class="n">Args</span><span class="p">...</span><span class="o">&gt;</span><span class="p">();</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kt">void</span><span class="w"> </span><span class="n">export_cpptuple_conv</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">create_tuple_converter</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="o">&gt;</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="n">create_tuple_converter</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="p">,</span><span class="w"> </span><span class="n">string</span><span class="o">&gt;</span><span class="p">();</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span><span class="n">tupid1</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span><span class="n">t</span><span class="p">){</span><span class="k">return</span><span class="w"> </span><span class="n">t</span><span class="p">;}</span><span class="w"></span>
+<span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="p">,</span><span class="w"> </span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">tupid2</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="p">,</span><span class="w"> </span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">t</span><span class="p">){</span><span class="k">return</span><span class="w"> </span><span class="n">t</span><span class="p">;}</span><span class="w"></span>
+
+<span class="n">BOOST_PYTHON_MODULE</span><span class="p">(</span><span class="n">bptuple</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">export_cpptuple_conv</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="n">py</span><span class="o">::</span><span class="n">def</span><span class="p">(</span><span class="s">&quot;tupid1&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">tupid1</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">py</span><span class="o">::</span><span class="n">def</span><span class="p">(</span><span class="s">&quot;tupid2&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">tupid2</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</code></pre></div>
+
+<ul>
+<li>The original code found <a href="http://codereview.stackexchange.com/questions/9202/boost-python-converter-for-stdtuple">here</a></li>
+<li>Github.Gist - <a href="https://gist.github.com/3729459">https://gist.github.com/3729459</a></li>
+</ul>
+    </div>
+  </article>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

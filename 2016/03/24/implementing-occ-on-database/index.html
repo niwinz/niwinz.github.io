@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>niwi.nz : Implementing OCC (Optimistic Concurrency Control) on the database</title>
+    <meta name=viewport content='width=200, initial-scale=1'>
+
+  <meta name="desciption" content="This is a simple tip for implement OCC directly on the database and so avoiding additional overhead that this can imply doing that at the application level. The OCC mechanism mainly consists in: having an additional column called version by convention. check if the incoming modification has the same version value. increment that number on successful modifications. This can be done at the application level, but that will imply at least an additional query for retrieve the row for match the..." />
+    <meta name="author" content="Andrey Antukh" />
+
+    <link rel="stylesheet" href="https://www.niwi.nz/theme/css/main.css" />
+
+      <link href="https://www.niwi.nz/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="niwi.nz Atom Feed" />
+
+      <link href="https://www.niwi.nz/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="niwi.nz RSS Feed" />
+
+    <!--[if IE]>
+        <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!--[if lte IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie.css"/>
+        <script src="https://www.niwi.nz/js/IE8.js" type="text/javascript"></script>
+    <![endif]-->
+
+    <!--[if lt IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie6.css"/>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div id="wrap">
+      <div id="container">
+
+        <div class="entry">
+  <header>
+    <a href="https://www.niwi.nz"><small>(return to home)</small></a>
+    <h1>
+      <a href="https://www.niwi.nz/2016/03/24/implementing-occ-on-database/" id="page-title">Implementing OCC (Optimistic Concurrency Control) on the database</a>
+    </h1>
+    <div class="article-meta">
+        <small class="time">
+          Date:
+          <time datetime="2016-03-24T00:00:00+00:00">
+            Thu 24 March 2016
+          </time>
+        </small>
+      <br />
+      <small class="tags">
+        Tags:
+          <a href="https://www.niwi.nz/tag/postgresql.html">postgresql,           </a>
+          <a href="https://www.niwi.nz/tag/concurrency.html">concurrency          </a>
+      </small>
+
+      <br />
+      <small class="tags">
+        Author:
+          <span>Andrey Antukh</span>      </small>
+    </div>
+  </header>
+  <article>
+    <div id="article-content">
+      <p>This is a simple tip for implement <a href="https://en.wikipedia.org/wiki/Optimistic_concurrency_control">OCC</a> directly on the database and so
+avoiding additional overhead that this can imply doing that at the application
+level.</p>
+<p>The <code>OCC</code> mechanism mainly consists in:</p>
+<ul>
+<li>having an additional column called <code>version</code> by convention.</li>
+<li>check if the incoming modification has the same version value.</li>
+<li>increment that number on successful modifications.</li>
+</ul>
+<p>This can be done at the application level, but that will imply at least
+an additional query for retrieve the row for match the version number.</p>
+<p>To implement that on the database (in this case PostgreSQL), let start
+defining a very simple trigger function that just checks the
+version and raise exception if version mismatch:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">handle_occ</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">RETURNS</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="s">$</span><span class="dl">occ</span><span class="s">$</span><span class="w"></span>
+<span class="w">  </span><span class="k">BEGIN</span><span class="w"></span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="p">(</span><span class="k">NEW</span><span class="mf">.</span><span class="k">version</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">OLD</span><span class="mf">.</span><span class="k">version</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span><span class="w"></span>
+<span class="w">      </span><span class="k">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">&#39;Version mismatch: expected % given %&#39;</span><span class="p">,</span><span class="w"></span>
+<span class="w">            </span><span class="k">OLD</span><span class="mf">.</span><span class="k">version</span><span class="p">,</span><span class="w"> </span><span class="k">NEW</span><span class="mf">.</span><span class="k">version</span><span class="w"></span>
+<span class="w">            </span><span class="k">USING</span><span class="w"> </span><span class="n">ERRCODE</span><span class="o">=</span><span class="s1">&#39;P0002&#39;</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">ELSE</span><span class="w"></span>
+<span class="w">      </span><span class="k">NEW</span><span class="mf">.</span><span class="k">version</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">NEW</span><span class="mf">.</span><span class="k">version</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">1</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">NEW</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">END</span><span class="p">;</span><span class="w"></span>
+<span class="s">$</span><span class="dl">occ</span><span class="s">$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span><span class="w"></span>
+</code></pre></div>
+
+<p>Then, we should create a sample table with <code>version</code> field and attach
+the appropriate trigger to it:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">foobar</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
+<span class="w">  </span><span class="n">id</span><span class="w"> </span><span class="nb">bigserial</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="k">version</span><span class="w"> </span><span class="nb">bigint</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mf">0</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="k">name</span><span class="w"> </span><span class="nb">text</span><span class="w"></span>
+<span class="p">);</span><span class="w"></span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="n">foobar_occ_tgr</span><span class="w"> </span><span class="k">BEFORE</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">foobar</span><span class="w"></span>
+<span class="w">  </span><span class="k">FOR</span><span class="w"> </span><span class="k">EACH</span><span class="w"> </span><span class="k">ROW</span><span class="w"> </span><span class="k">EXECUTE</span><span class="w"> </span><span class="k">PROCEDURE</span><span class="w"> </span><span class="n">handle_occ</span><span class="p">();</span><span class="w"></span>
+</code></pre></div>
+
+<p>And we are done, let try that:</p>
+<div class="highlight"><pre><span></span><code><span class="gp">test=#</span><span class="w"> </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">foobar</span><span class="w"> </span><span class="p">(</span><span class="k">name</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;Yennefer&#39;</span><span class="p">);</span><span class="w"></span>
+<span class="go">INSERT 0 1</span>
+
+<span class="gp">test=#</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">foobar</span><span class="p">;</span><span class="w"></span>
+<span class="go"> id | version |   name</span>
+<span class="go">----+---------+----------</span>
+<span class="go">  1 |       0 | Yennefer</span>
+<span class="go">(1 row)</span>
+
+<span class="gp">test=#</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="n">foobar</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="k">version</span><span class="o">=</span><span class="mf">3</span><span class="p">,</span><span class="w"> </span><span class="k">name</span><span class="o">=</span><span class="s1">&#39;Ciri&#39;</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1</span><span class="p">;</span><span class="w"></span>
+<span class="gs">ERROR:</span><span class="gr">  Version mismatch: expected 0 given 3</span>
+</code></pre></div>
+
+<p>At the application level you can catch and handle this kind of errors
+using the explicitly defined <code>ERRCODE</code> on the exception raised inside
+the trigger function.</p>
+<p>And finally, you don't need any additional concurrency control such as
+using additional locks or more stronger isolation level for maintain
+consistency. PostgreSQL by default acquires <code>ROW EXCLUSIVE</code> locks
+for each row in <code>UPDATE</code> statements that already protects you from
+possible race condition.</p>
+    </div>
+  </article>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

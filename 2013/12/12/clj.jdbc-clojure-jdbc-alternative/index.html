@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>niwi.nz : clojure.jdbc - JDBC for Clojure</title>
+    <meta name=viewport content='width=200, initial-scale=1'>
+
+  <meta name="desciption" content="This is a young library what intends be a real alternative to the current clojure contrib library: clojure.java.jdbc. Why? The answer to this querstion can be simple. The first reason for existente of clojure.jdbc is thar a original library has a very unintuitive api and documentation is realy unexistent. You can read other reasons on the FAQ page. This is a little list of clojure.jdbc project goals: Explicit is better than implicit. Readability counts. Should be concise and intuitive for..." />
+    <meta name="author" content="Andrey Antukh" />
+
+    <link rel="stylesheet" href="https://www.niwi.nz/theme/css/main.css" />
+
+      <link href="https://www.niwi.nz/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="niwi.nz Atom Feed" />
+
+      <link href="https://www.niwi.nz/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="niwi.nz RSS Feed" />
+
+    <!--[if IE]>
+        <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!--[if lte IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie.css"/>
+        <script src="https://www.niwi.nz/js/IE8.js" type="text/javascript"></script>
+    <![endif]-->
+
+    <!--[if lt IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie6.css"/>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div id="wrap">
+      <div id="container">
+
+        <div class="entry">
+  <header>
+    <a href="https://www.niwi.nz"><small>(return to home)</small></a>
+    <h1>
+      <a href="https://www.niwi.nz/2013/12/12/clj.jdbc-clojure-jdbc-alternative/" id="page-title">clojure.jdbc - JDBC for Clojure</a>
+    </h1>
+    <div class="article-meta">
+        <small class="time">
+          Date:
+          <time datetime="2013-12-12T00:00:00+00:00">
+            Thu 12 December 2013
+          </time>
+        </small>
+      <br />
+      <small class="tags">
+        Tags:
+          <a href="https://www.niwi.nz/tag/clojure.html">clojure,           </a>
+          <a href="https://www.niwi.nz/tag/jdbc.html">jdbc          </a>
+      </small>
+
+      <br />
+      <small class="tags">
+        Author:
+          <span>Andrey Antukh</span>      </small>
+    </div>
+  </header>
+  <article>
+    <div id="article-content">
+      <p>This is a young library what intends be a real alternative to the current clojure contrib
+library: clojure.java.jdbc.</p>
+<p>Why? The answer to this querstion can be simple. The first reason for existente
+of clojure.jdbc is thar a original library has a very unintuitive api and documentation is
+realy unexistent. You can read other reasons on the <a class="reference external" href="http://niwibe.github.io/clojure.jdbc/#_why_another_jdbc_wrapper">FAQ page.</a></p>
+<p>This is a little list of <strong>clojure.jdbc</strong> project goals:</p>
+<ul class="simple">
+<li>Explicit is better than implicit.</li>
+<li>Readability counts.</li>
+<li>Should be concise and intuitive for humans.</li>
+<li>Well documented.</li>
+<li>Open to contributions.</li>
+<li>More permisive license.</li>
+</ul>
+<div class="section" id="gettings-started-making-a-query">
+<h2>Gettings started making a query</h2>
+<p>The simplest way to see how it works, is seeing a one basic example. In this case, we
+go to create a connection and execute a query.</p>
+<div class="highlight"><pre><span></span><span class="p">(</span><span class="nf">require</span> <span class="o">&#39;</span><span class="p">[</span><span class="nv">jdbc.core</span> <span class="ss">:refer</span> <span class="p">[</span><span class="nv">with-connection</span> <span class="nv">query</span><span class="p">]])</span>
+
+<span class="p">(</span><span class="k">def </span><span class="nv">dbspec</span> <span class="p">{</span><span class="ss">:classname</span> <span class="s">&quot;org.postgresql.Driver&quot;</span>
+             <span class="ss">:subprotocol</span> <span class="s">&quot;postgresql&quot;</span>
+             <span class="ss">:subname</span> <span class="s">&quot;//localhost:5432/dbname&quot;</span>
+             <span class="ss">:user</span> <span class="s">&quot;username&quot;</span>
+             <span class="ss">:password</span> <span class="s">&quot;password&quot;</span><span class="p">})</span>
+
+<span class="p">(</span><span class="nf">with-connection</span> <span class="nv">dbspec</span> <span class="nv">conn</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">result</span> <span class="p">(</span><span class="nf">query</span> <span class="nv">conn</span> <span class="s">&quot;SELECT 1 + 1 as foo;&quot;</span><span class="p">)]</span>
+    <span class="p">(</span><span class="nb">println </span><span class="nv">result</span><span class="p">)))</span>
+
+<span class="c1">;; -&gt; [{:foo 2}]</span>
+</pre></div>
+<p><strong>with-connection</strong> is a helper idiomatic macro that hides a real implementation and resource
+management, but if you want more control over resource management, you can use <strong>make-connection</strong>
+function instead:</p>
+<div class="highlight"><pre><span></span><span class="p">(</span><span class="nf">require</span> <span class="o">&#39;</span><span class="p">[</span><span class="nv">jdbc.core</span> <span class="ss">:refer</span> <span class="p">[</span><span class="nv">make-connection</span> <span class="nv">query</span><span class="p">]])</span>
+
+<span class="p">(</span><span class="nb">with-open </span><span class="p">[</span><span class="nv">conn</span> <span class="p">(</span><span class="nf">make-connection</span> <span class="nv">spec</span><span class="p">)]</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">result</span> <span class="p">(</span><span class="nf">query</span> <span class="nv">conn</span> <span class="s">&quot;SELECT 1 + 1 as foo;&quot;</span><span class="p">)]</span>
+    <span class="p">(</span><span class="nb">println </span><span class="nv">result</span><span class="p">)))</span>
+</pre></div>
+<p>Similar code using a clojure.java.jdbc (proposed by the author of clojure.java.jdbc on
+the clojure mailing list):</p>
+<div class="highlight"><pre><span></span><span class="p">(</span><span class="nf">require</span> <span class="o">&#39;</span><span class="p">[</span><span class="nv">clojure.java.jdbc</span> <span class="ss">:as</span> <span class="nv">jdbc</span><span class="p">])</span>
+
+<span class="p">(</span><span class="k">def </span><span class="nv">dbspec</span> <span class="p">{</span><span class="ss">:classname</span> <span class="s">&quot;org.postgresql.Driver&quot;</span>
+             <span class="ss">:subprotocol</span> <span class="s">&quot;postgresql&quot;</span>
+             <span class="ss">:subname</span> <span class="s">&quot;//localhost:5432/dbname&quot;</span>
+             <span class="ss">:user</span> <span class="s">&quot;username&quot;</span>
+             <span class="ss">:password</span> <span class="s">&quot;password&quot;</span><span class="p">})</span>
+
+<span class="p">(</span><span class="nb">with-open </span><span class="p">[</span><span class="nv">con</span> <span class="p">(</span><span class="nf">jdbc/get-connection</span> <span class="nv">db-spec</span><span class="p">)]</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">connected</span>  <span class="p">(</span><span class="nf">jdbc/add-connection</span> <span class="nv">db-spec</span> <span class="nv">con</span><span class="p">)</span>
+        <span class="nv">result</span>     <span class="p">(</span><span class="nf">jdbc/query</span> <span class="nv">connected</span> <span class="p">[</span><span class="s">&quot;SELECT 1 + 1 as foo;&quot;</span><span class="p">])]</span>
+    <span class="p">(</span><span class="nb">println </span><span class="nv">result</span><span class="p">)))</span>
+</pre></div>
+<p><strong>clojure.jdbc</strong> is mainly designed for be used by humans with more clear and intuitive
+api than clojure.java.jdbc.</p>
+<p>You can read more about all features and more examples on
+<a class="reference external" href="http://niwibe.github.io/clojure.jdbc/">project documentation page</a>  and
+access to source code on <a class="reference external" href="https://github.com/niwibe/clojure.jdbc">Github</a>.</p>
+</div>
+
+    </div>
+  </article>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

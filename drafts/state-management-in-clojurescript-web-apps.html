@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>niwi.nz : State management in ClojureScript web applications</title>
+    <meta name=viewport content='width=200, initial-scale=1'>
+
+  <meta name="desciption" content="If you are here, probaly you know about the new trending things like relay, falcor or om.next. In contrary to them, I&#39;ll try to explain my throughts about state management in clojurescript web applications. Local state The first approach that was popularized with om, was using the cursor abstraction for provide a &#34;limited&#34; vision of global state to the subcomponents and remove some kind of coupling. The state transformation in that approach is usually mixed with the UI logic...." />
+    <meta name="author" content="Andrey Antukh" />
+
+    <link rel="stylesheet" href="https://www.niwi.nz/theme/css/main.css" />
+
+      <link href="https://www.niwi.nz/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="niwi.nz Atom Feed" />
+
+      <link href="https://www.niwi.nz/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="niwi.nz RSS Feed" />
+
+    <!--[if IE]>
+        <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!--[if lte IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie.css"/>
+        <script src="https://www.niwi.nz/js/IE8.js" type="text/javascript"></script>
+    <![endif]-->
+
+    <!--[if lt IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie6.css"/>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div id="wrap">
+      <div id="container">
+
+        <div class="entry">
+  <header>
+    <a href="https://www.niwi.nz"><small>(return to home)</small></a>
+    <h1>
+      <a href="https://www.niwi.nz/drafts/state-management-in-clojurescript-web-apps.html" id="page-title">State management in ClojureScript web applications</a>
+    </h1>
+    <div class="article-meta">
+        <small class="time">
+          Date:
+          <time datetime="2015-11-24T00:00:00+00:00">
+            Tue 24 November 2015
+          </time>
+        </small>
+      <br />
+      <small class="tags">
+        Tags:
+          <a href="https://www.niwi.nz/tag/clojure.html">clojure,           </a>
+          <a href="https://www.niwi.nz/tag/security.html">security,           </a>
+          <a href="https://www.niwi.nz/tag/auth.html">auth          </a>
+      </small>
+
+      <br />
+      <small class="tags">
+        Author:
+          <span>Andrey Antukh</span>      </small>
+    </div>
+  </header>
+  <article>
+    <div id="article-content">
+      <p>If you are here, probaly you know about the new trending things like relay,
+falcor or om.next. In contrary to them, I'll try to explain my throughts about
+state management in clojurescript web applications.</p>
+<h2>Local state</h2>
+<p>The first approach that was popularized with om, was using the <strong>cursor</strong>
+abstraction for provide a "limited" vision of global state to the subcomponents
+and remove some kind of coupling. The state transformation in that approach
+is usually mixed with the UI logic.</p>
+<p>Also, the <strong>cursor</strong> approach has its own downslides and limitations such as
+making mandatory use plain types removing the facilities such as declaring own
+types and polymorphic abstractions with protocols.</p>
+<h3>Use lenses instead of cursors</h3>
+<p>A good cursor replacement I think are lenses. Them provides all the good things
+of cursrors but does not provides any of them downsides.</p>
+<p>Imagine you have this state:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="kd">defrecord </span><span class="nv">A</span> <span class="p">[</span><span class="nv">v</span><span class="p">])</span>
+
+<span class="p">(</span><span class="k">def </span><span class="nv">state</span>
+  <span class="p">(</span><span class="nf">atom</span> <span class="p">{</span><span class="ss">:items</span> <span class="p">[</span><span class="o">#</span><span class="nv">user.A</span><span class="p">{</span><span class="ss">:v</span> <span class="mi">2</span><span class="p">}</span>
+                 <span class="o">#</span><span class="nv">user.A</span><span class="p">{</span><span class="ss">:v</span> <span class="mi">5</span><span class="p">}]}))</span>
+</code></pre></div>
+
+<p>Now, using a lenses implementation in <a href="http://www.niwi.nz">cats</a> you can focus on different positions
+of the datastructure:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="nf">require</span> <span class="o">&#39;</span><span class="p">[</span><span class="nv">cats.labs.lens</span> <span class="ss">:as</span> <span class="nv">l</span><span class="p">])</span>
+
+<span class="p">(</span><span class="k">def </span><span class="nv">l1</span> <span class="p">(</span><span class="nf">l/focus-atom</span> <span class="p">(</span><span class="nf">l/in</span> <span class="p">[</span><span class="ss">:items</span> <span class="mi">0</span><span class="p">])</span> <span class="nv">state</span><span class="p">))</span>
+<span class="p">(</span><span class="k">def </span><span class="nv">l2</span> <span class="p">(</span><span class="nf">l/focus-atom</span> <span class="p">(</span><span class="nf">l/in</span> <span class="p">[</span><span class="ss">:items</span> <span class="mi">0</span> <span class="ss">:v</span><span class="p">])</span> <span class="nv">state</span><span class="p">))</span>
+
+<span class="o">@</span><span class="nv">l2</span>
+<span class="c1">;; =&gt; 2</span>
+
+<span class="o">@</span><span class="nv">l1</span>
+<span class="c1">;; =&gt; #user.A{:v 2}</span>
+</code></pre></div>
+
+<p>Also, you can apply some transformations to the focused values using the
+well known atom interface:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="nf">swap!</span> <span class="nv">l2</span> <span class="nv">inc</span><span class="p">)</span>
+
+<span class="o">@</span><span class="nv">l2</span>
+<span class="c1">;; =&gt; 3</span>
+
+<span class="o">@</span><span class="nv">l1</span>
+<span class="c1">;; =&gt; #user.A{:v 3}</span>
+</code></pre></div>
+
+<p>You can observe that you can focus also on portion of records and apply
+transformations over its values. This allows us have atom like visions of the
+global state without any limitations of cursors.</p>
+<h3>Use named state transitions</h3>
+<p>Instead of using adhoc state transformations in your UI related code.</p>
+<p>This is can be done in bunch of different ways, byt my prefered approach for it
+is just use a reduce function defined as multimethod for easy extensibility.</p>
+<p>This is a little example of the multimethod aspect:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="kd">defmulti </span><span class="nv">state-transition</span>
+  <span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">state</span> <span class="p">[</span><span class="nv">event</span> <span class="nv">param</span><span class="p">]]</span> <span class="nv">event</span><span class="p">))</span>
+</code></pre></div>
+
+<p>It can be used in this way:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="kd">defmethod </span><span class="nv">state-transition</span> <span class="ss">:index-users</span>
+  <span class="p">[</span><span class="nv">state</span> <span class="p">[</span><span class="nv">_</span> <span class="nv">users</span><span class="p">]]</span>
+  <span class="p">(</span><span class="nf">letfn</span> <span class="p">[(</span><span class="nf">index-counter</span> <span class="p">[</span><span class="nv">state</span> <span class="nv">item</span><span class="p">]</span>
+            <span class="p">(</span><span class="nf">assoc-in</span> <span class="nv">state</span> <span class="p">[</span><span class="ss">:users-by-id</span> <span class="p">(</span><span class="ss">:id</span> <span class="nv">item</span><span class="p">)]</span> <span class="nv">item</span><span class="p">))]</span>
+    <span class="p">(</span><span class="nb">reduce </span><span class="nv">index-counter</span> <span class="nv">state</span> <span class="nv">counters</span><span class="p">)))</span>
+
+<span class="p">(</span><span class="kd">defmethod </span><span class="nv">state-transition</span> <span class="ss">:set-users</span>
+  <span class="p">[</span><span class="nv">state</span> <span class="p">[</span><span class="nv">_</span> <span class="nv">users</span><span class="p">]]</span>
+  <span class="p">(</span><span class="nb">-&gt; </span><span class="p">(</span><span class="nb">assoc </span><span class="nv">state</span> <span class="ss">:users</span> <span class="p">(</span><span class="nf">mapv</span> <span class="ss">:id</span> <span class="nv">counters</span><span class="p">))</span>
+      <span class="p">(</span><span class="nf">state-transition</span> <span class="p">[</span><span class="ss">:index-counters</span> <span class="nv">counters</span><span class="p">])))</span>
+</code></pre></div>
+
+<p>The previous example defines a simple example for put an hipotetical
+users list to the state in a denoramalized way (for easy access by id from
+react components).</p>
+<p>This is really very simple improvement but adds a lot of value in decoupling
+the UI code from the domain logic in state transformations.</p>
+<h2>Remote state</h2>
+<p>The most popular approach for manage and retrieve remote state at this moment
+are the RESTful api's. However the unit of work of composition is slightly
+inexpresive.</p>
+<p>There are also the new approaches such as <a href="http://www.niwi.nz">relay</a> and <a href="http://www.niwi.nz">falcor</a> that are
+growing in popularity that offers much rich and expresive way to define the
+communication with the backend.</p>
+<p>Independently of what approach you are using, my prefered way to access to the
+remote resources should be decoupled from any framework. It should be simple
+for plug for different kinds of API's or various of them behind of an uniform
+data based application interface.</p>
+<p>Let imagine we have something like this:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="kd">defmulti </span><span class="nv">read-fn</span> <span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">store</span> <span class="nb">key </span><span class="nv">params</span><span class="p">]</span> <span class="nv">key</span><span class="p">))</span>
+<span class="p">(</span><span class="kd">defmulti </span><span class="nv">novelty-fn</span> <span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">store</span> <span class="nb">key </span><span class="nv">params</span><span class="p">]</span> <span class="nv">key</span><span class="p">))</span>
+
+<span class="p">(</span><span class="kd">defonce </span><span class="nv">state</span> <span class="p">(</span><span class="nf">atom</span> <span class="p">{}))</span>
+
+<span class="p">(</span><span class="kd">defonce </span><span class="nv">store</span>
+  <span class="p">(</span><span class="nf">s/store</span> <span class="nv">state</span> <span class="p">{</span><span class="ss">:read</span> <span class="nv">read-fn</span>
+                  <span class="ss">:novelty</span> <span class="nv">novelty-fn</span><span class="p">}))</span>
+</code></pre></div>
+
+<p>Do not wory about <code>s/store</code> implementation, it will be explained later, at this
+moment is more important understand its purpose.</p>
+<p>The store instance is just a wraper for your global state (and behaves like it
+because it implemes the basic atom interface) that allows attach a user defined
+impl to specific state.</p>
+<p>The <strong>read</strong> and <strong>novelty</strong> concepts are self descriptive, the first one is
+for retrieve data and the second is for put some transformation back to the
+backend.</p>
+<p>Let define a impl for load an hipotetical users from some kind of api:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="nf">require</span> <span class="o">&#39;</span><span class="p">[</span><span class="nv">promise.core</span> <span class="ss">:as</span> <span class="nv">p</span><span class="p">]</span>
+         <span class="o">&#39;</span><span class="p">[</span><span class="nv">your.app.rest</span> <span class="ss">:as</span> <span class="nv">api</span><span class="p">])</span>
+
+<span class="p">(</span><span class="kd">defmethod </span><span class="nv">read-fn</span> <span class="ss">:load-users</span>
+  <span class="p">[</span><span class="nv">_</span> <span class="nv">_</span> <span class="nv">_</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">p/then</span> <span class="p">(</span><span class="nf">api/get-users</span><span class="p">)</span>
+          <span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">users</span><span class="p">]</span>
+            <span class="p">(</span><span class="nf">swap!</span> <span class="nv">state-transition</span> <span class="p">[</span><span class="ss">:set-users</span> <span class="nv">users</span><span class="p">]))))</span>
+</code></pre></div>
+
+<p>You can observe that the main difference of this with the previous local state
+management approach is that this works with <a href="http://www.niwi.nz">promises</a>. The promises here are
+because the communication with the potential api are surelly asynchronous.</p>
+<p>Here is a example on how this can be consumed:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="nb">-&gt; </span><span class="p">(</span><span class="nf">s/read</span> <span class="nv">store</span> <span class="p">[</span><span class="ss">:load-users</span><span class="p">])</span>
+    <span class="p">(</span><span class="nf">p/then</span> <span class="o">#</span><span class="p">(</span><span class="nb">println </span><span class="s">&quot;Completed&quot;</span><span class="p">)))</span>
+</code></pre></div>
+
+<p>The <strong>s/read</strong> function returns a promise that will be resolved when the operation
+is completed. There is also <strong>s/novelty</strong> function for novelty events.</p>
+<p>I think this approach allows a clear "client-server" like separation between UI
+code and the state management and it is also desirable for applications that
+works completly in client side.</p>
+<p>Here an other example but using <a href="http://www.niwi.nz">cats alet</a> for make parallel requests:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="nf">require</span> <span class="o">&#39;</span><span class="p">[</span><span class="nv">cats.core</span> <span class="ss">:as</span> <span class="nv">m</span><span class="p">])</span>
+
+<span class="p">(</span><span class="kd">defmethod </span><span class="nv">read-fn</span> <span class="ss">:get-user</span>
+  <span class="p">[</span><span class="nv">_</span> <span class="nv">_</span> <span class="nv">id</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">m/alet</span> <span class="p">[</span><span class="nv">user</span> <span class="p">(</span><span class="nf">api/get-user</span> <span class="nv">id</span><span class="p">)</span>
+           <span class="nv">friends</span> <span class="p">(</span><span class="nf">api/get-friends</span> <span class="nv">id</span><span class="p">)]</span>
+    <span class="p">(</span><span class="nb">assoc </span><span class="nv">user</span> <span class="ss">:friends</span> <span class="nv">friends</span><span class="p">)))</span>
+
+<span class="c1">;; And then:</span>
+
+<span class="p">(</span><span class="nf">m/mlet</span> <span class="p">[</span><span class="nv">user</span> <span class="p">(</span><span class="nf">s/read</span> <span class="nv">store</span> <span class="p">[</span><span class="ss">:get-user</span> <span class="mi">1</span><span class="p">])]</span>
+  <span class="p">(</span><span class="nf">swap!</span> <span class="nv">state-transition</span> <span class="p">[</span><span class="ss">:add-user</span> <span class="nv">user</span><span class="p">]))</span>
+</code></pre></div>
+    </div>
+  </article>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

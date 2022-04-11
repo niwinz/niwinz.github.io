@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>niwi.nz : Django - ORM - Especificar que campos guardar al llamar `save()`</title>
+    <meta name=viewport content='width=200, initial-scale=1'>
+
+  <meta name="desciption" content="Hasta ahora, al de ejcutar save(), de una instancia de modelo de django, se lanzaba una sentencia update para todos los campos que el modelo tiene definido. Esto realmente es poco eficiente, sobretodo si solo has modificado un campo concreto. En la proxima version de django (1.5) se añade un parametro adicional al save(), que permite especificar que campos guardar. Posibilitando así un guardado mas eficiente. Ejemplo: instance = SomeModel.objects.get(pk=1) instance.name = u&#39;Foo&#39;..." />
+    <meta name="author" content="Andrey Antukh" />
+
+    <link rel="stylesheet" href="https://www.niwi.nz/theme/css/main.css" />
+
+      <link href="https://www.niwi.nz/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="niwi.nz Atom Feed" />
+
+      <link href="https://www.niwi.nz/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="niwi.nz RSS Feed" />
+
+    <!--[if IE]>
+        <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!--[if lte IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie.css"/>
+        <script src="https://www.niwi.nz/js/IE8.js" type="text/javascript"></script>
+    <![endif]-->
+
+    <!--[if lt IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie6.css"/>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div id="wrap">
+      <div id="container">
+
+        <div class="entry">
+  <header>
+    <a href="https://www.niwi.nz"><small>(return to home)</small></a>
+    <h1>
+      <a href="https://www.niwi.nz/2012/07/22/django-guardar-campos-modificados/" id="page-title">Django - ORM - Especificar que campos guardar al llamar `save()`</a>
+    </h1>
+    <div class="article-meta">
+        <small class="time">
+          Date:
+          <time datetime="2012-07-22T00:00:00+00:00">
+            Sun 22 July 2012
+          </time>
+        </small>
+      <br />
+      <small class="tags">
+        Tags:
+          <a href="https://www.niwi.nz/tag/django.html">django,           </a>
+          <a href="https://www.niwi.nz/tag/orm.html">orm,           </a>
+          <a href="https://www.niwi.nz/tag/python.html">python          </a>
+      </small>
+
+      <br />
+      <small class="tags">
+        Author:
+          <span>Andrey Antukh</span>      </small>
+    </div>
+  </header>
+  <article>
+    <div id="article-content">
+      <p>Hasta ahora, al de ejcutar <code>save()</code>, de una instancia de modelo de django, se lanzaba una sentencia update para todos los campos que el modelo tiene definido. Esto realmente es poco eficiente, sobretodo si solo has modificado un campo concreto.</p>
+<p>En la proxima version de django (1.5) se añade un parametro adicional al <code>save()</code>, que permite especificar que campos guardar. Posibilitando así un guardado mas eficiente.</p>
+<p>Ejemplo:</p>
+<div class="highlight"><pre><span></span><code><span class="n">instance</span> <span class="o">=</span> <span class="n">SomeModel</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">pk</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">instance</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="sa">u</span><span class="s1">&#39;Foo&#39;</span>
+<span class="n">instance</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">update_fields</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
+</code></pre></div>
+
+<p>Adicionalmente, se espera que para django 1.5 tengamos la integracion de esta "feature" con las consultas hechas con <code>defer()</code> o <code>only()</code>.</p>
+<p>Ejemplo:</p>
+<div class="highlight"><pre><span></span><code><span class="n">instance</span> <span class="o">=</span> <span class="n">SomeModel</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">only</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">pk</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> 
+<span class="n">instance</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="sa">u</span><span class="s1">&#39;Foo&#39;</span>
+<span class="n">instance</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+</code></pre></div>
+
+<p>Este ejemplo, con la version 1.4 de django, ejecutaría N consultas adicionales, como campos diferidos haya y luego guardara todo en una sentencia <code>UPDATE</code>. La idea  del parche que esta a punto de entrar al core de django, es que al guardar los datos con campos diferidos, es que solo se guarden los datos disponibles, sin tocar los campos diferidos. Así evitando las innecesarias consultas adicionales.</p>
+<h4>Enlaces</h4>
+<p><a href="https://docs.djangoproject.com/en/dev//ref/models/instances/#specifying-which-fields-to-save">https://docs.djangoproject.com/en/dev//ref/models/instances/#specifying-which-fields-to-save</a></p>
+    </div>
+  </article>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>niwi.nz : Herencia multiple y super() en python</title>
+    <meta name=viewport content='width=200, initial-scale=1'>
+
+  <meta name="desciption" content="Se que hay mucha polemica y muchos debates respeto a la herencia multiple, algunos estan a favor y otros como lo mas habitual, en contra. Seguramente todos tendran sus razones, todas dignas de ser tomadas en cuenta. La principal critica es que incorpora una complejidad al lenguaje y como tratar las ambiguedades, ademas de que cada lenguaje lo hace a su manera. Pero en este caso estamos hablando de python, y a mi parecer, no lo hace tan mal, si no al reves, creo que resuelve este tema con..." />
+    <meta name="author" content="Andrey Antukh" />
+
+    <link rel="stylesheet" href="https://www.niwi.nz/theme/css/main.css" />
+
+      <link href="https://www.niwi.nz/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="niwi.nz Atom Feed" />
+
+      <link href="https://www.niwi.nz/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="niwi.nz RSS Feed" />
+
+    <!--[if IE]>
+        <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!--[if lte IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie.css"/>
+        <script src="https://www.niwi.nz/js/IE8.js" type="text/javascript"></script>
+    <![endif]-->
+
+    <!--[if lt IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie6.css"/>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div id="wrap">
+      <div id="container">
+
+        <div class="entry">
+  <header>
+    <a href="https://www.niwi.nz"><small>(return to home)</small></a>
+    <h1>
+      <a href="https://www.niwi.nz/2011/06/09/herencia-multiple-y-super-en-python/" id="page-title">Herencia multiple y super() en python</a>
+    </h1>
+    <div class="article-meta">
+        <small class="time">
+          Date:
+          <time datetime="2011-06-09T00:00:00+00:00">
+            Thu 09 June 2011
+          </time>
+        </small>
+      <br />
+      <small class="tags">
+        Tags:
+          <a href="https://www.niwi.nz/tag/python.html">python          </a>
+      </small>
+
+      <br />
+      <small class="tags">
+        Author:
+          <span>Andrey Antukh</span>      </small>
+    </div>
+  </header>
+  <article>
+    <div id="article-content">
+      <p>Se que hay mucha polemica y muchos debates respeto a la herencia multiple, algunos estan a favor y otros como lo mas habitual, en contra. Seguramente todos tendran sus razones, todas dignas de ser tomadas en cuenta. La principal critica es que incorpora una complejidad al lenguaje y como tratar las ambiguedades, ademas de que cada lenguaje lo hace a su manera.</p>
+<p>Pero en este caso estamos hablando de python, y a mi parecer, no lo hace tan mal, si no al reves, creo que resuelve este tema con bastante elegancia (casi igual que perl). En mi opinion creo que el tema de ambiguedades, diferencias de las clases y la complejidad que comporta, es dependiente del desarrollador, y no 100% de la forma en la que el lenguaje resuelve este tema.</p>
+<p>Este articulo en realidad no viene a habalar de la herencia multiple en si, ni generar debates ni polemicas, si no que explicar por encima de como lo tiene implementado python y como aprovecharla mediante la funcion super().</p>
+<h4>¿Como funciona?</h4>
+<p>La herencia multiple en python se define como una lista de superclases, ordenada con una especie de algoritmo por orden de profundidad y ejecuta el primer metodo que encuentra. Para la curiosidad, esta lista se encuentra guardada en la propiedad <strong>mro</strong> de la clase.</p>
+<p>¿Si ejecuta el primer metodo que encuentra, que pasa con los metodos padres si es que existen?, pues es bastante facil, aqui es donde entra en juego super(). Su funcion principal es ejecutar el metodo padre.</p>
+<h4>Ejemplo 1</h4>
+<p>Para ver el funcionamiento basico de super(), puede observar el ejemplo1, el cual contiene 2 clases que imprimen su nombre, y ejecutan el metodo <strong>init</strong> padre. En la lista de <strong>mro</strong> como ya dije anteriormente, podemos observar el orden de prioridad/profundidad con las que se va ir ejecutando los metodos de las superclases.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># -*- coding: utf8 -*-</span>
+
+<span class="k">class</span> <span class="nc">A</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span> <span class="s2">&quot;A&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+<span class="k">class</span> <span class="nc">B</span><span class="p">(</span><span class="n">A</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span> <span class="s2">&quot;B&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+<span class="nb">print</span> <span class="s2">&quot;__mro__:&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="vm">__name__</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">B</span><span class="o">.</span><span class="vm">__mro__</span><span class="p">]</span>
+<span class="n">instance</span> <span class="o">=</span> <span class="n">B</span><span class="p">()</span>
+</code></pre></div>
+
+<p>Y la salida de este ejemplo es:</p>
+<div class="highlight"><pre><span></span><code><span class="go">[3/4.3.11]niwi@vaio:~/doc.herencia.multiple&gt; python2 example1.py</span>
+<span class="go">__mro__: [&#39;B&#39;, &#39;A&#39;, &#39;object&#39;]</span>
+<span class="go">B</span>
+<span class="go">A</span>
+</code></pre></div>
+
+<h4>Ejemplo 2</h4>
+<p>En este ejemplo veremos un poco mas de complejidad, utilizando ya lo que tenemos del codigo anterior y añadimos 2 clases mas. Una que herede de A que la llamaremos C y otra que herede de B y C que la llamaremos D. Aqui es donde podremos ver en accion de como python maneja la herencia multiple. Como ya mencione en la introduccion, es bastante simple: primero ejecuta todas las superclases de primer nivel de profundidad y luego ejecuta el segundo nivel asi llegando hasta el final que es object.</p>
+<p>Esto ultimo que acabo de contar funciona cuando tenemos una especie de rombo de dependencia, en otros casos pasa algo diferente que lo veremos en otros ejemplos.</p>
+<p>Una cosa que tenemos que darnos cuenta, y si es que si muchas superclases de primer nivel heredan de una superclase del segundo nivel, solo se ejecutara una vez. Para verlo mas claro, mire ele ejemplo2.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># -*- coding: utf8 -*-</span>
+
+<span class="k">class</span> <span class="nc">A</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span> <span class="s2">&quot;A&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+<span class="k">class</span> <span class="nc">B</span><span class="p">(</span><span class="n">A</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span> <span class="s2">&quot;B&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+<span class="k">class</span> <span class="nc">C</span><span class="p">(</span><span class="n">A</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span> <span class="s2">&quot;C&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+<span class="k">class</span> <span class="nc">D</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="n">B</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span> <span class="s2">&quot;D&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">D</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+
+<span class="nb">print</span> <span class="s2">&quot;__mro__:&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="vm">__name__</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">D</span><span class="o">.</span><span class="vm">__mro__</span><span class="p">]</span>
+<span class="n">instance</span> <span class="o">=</span> <span class="n">D</span><span class="p">()</span>
+</code></pre></div>
+
+<p>Y la salida de este ejemplo es:</p>
+<div class="highlight"><pre><span></span><code><span class="go">[3/4.3.11]{2}niwi@vaio:~/doc.herencia.multiple&gt; python2 example2.py</span>
+<span class="go">__mro__: [&#39;D&#39;, &#39;C&#39;, &#39;B&#39;, &#39;A&#39;, &#39;object&#39;]</span>
+<span class="go">D</span>
+<span class="go">C</span>
+<span class="go">B</span>
+<span class="go">A</span>
+</code></pre></div>
+
+<h4>Ejemplo 3</h4>
+<p>Una vez comprendidos los ejemplos anteriores, vamos a ver que pasa cuando a la clase D añadimos otra superclase, pero que esta vez esa superclase herede de otro objeto de segundo nivel, como podria ser el mismo object.</p>
+<p>El funcionamiento, se puede deducir a simple vista, pero intentare explicarlo. El algoritmo que usa python, analiza el primer nivel y lo agrupa por la superclase de segundo nivel. Si nos encontramos en el caso del ejemplo 2, vemos que C y B heredan de una sola superclase que es A, entonces, el procedimiento es ejecutar C, B y luego A, pero en el caso de C y B heredaran de una superclase diferente el orden seria por profundidad. Es decir Que ejecutaria el <strong>init</strong> de la superclase C y luego la superclase de la que hereda C, seguido de <strong>init</strong> de B que a su vez ejecutaria el <strong>init</strong> de la superclase de B.</p>
+<p>Para ver con claridad, he creado una clase Z que deriba de object y la he añadido como superclase a D, a continuacion puede ver el codigo final y su ejecucion para que pueda ver con mas claridad el funcionamiento:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># -*- coding: utf8 -*-</span>
+
+<span class="k">class</span> <span class="nc">A</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span> <span class="s2">&quot;A&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+<span class="k">class</span> <span class="nc">B</span><span class="p">(</span><span class="n">A</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span> <span class="s2">&quot;B&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+<span class="k">class</span> <span class="nc">C</span><span class="p">(</span><span class="n">A</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span> <span class="s2">&quot;C&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+<span class="k">class</span> <span class="nc">Z</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span> <span class="s2">&quot;Z&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+<span class="k">class</span> <span class="nc">D</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="n">B</span><span class="p">,</span><span class="n">Z</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span> <span class="s2">&quot;D&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">D</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+<span class="nb">print</span> <span class="s2">&quot;__mro__:&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="vm">__name__</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">D</span><span class="o">.</span><span class="vm">__mro__</span><span class="p">]</span>
+<span class="n">instance</span> <span class="o">=</span> <span class="n">D</span><span class="p">()</span>
+</code></pre></div>
+
+<p>Y la salida de este ejemplo es:</p>
+<div class="highlight"><pre><span></span><code><span class="go">[3/4.3.11]niwi@vaio:~/doc.herencia.multiple&gt; python2 example3.py</span>
+<span class="go">__mro__: [&#39;D&#39;, &#39;C&#39;, &#39;B&#39;, &#39;A&#39;, &#39;Z&#39;, &#39;object&#39;]</span>
+<span class="go">D</span>
+<span class="go">C</span>
+<span class="go">B</span>
+<span class="go">A</span>
+<span class="go">Z</span>
+</code></pre></div>
+    </div>
+  </article>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

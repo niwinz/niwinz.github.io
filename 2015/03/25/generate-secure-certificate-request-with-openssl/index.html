@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>niwi.nz : Generating a secure certificate request with OpenSSL</title>
+    <meta name=viewport content='width=200, initial-scale=1'>
+
+  <meta name="desciption" content="This is a little cheat sheet for personal use on how generate a secure certificate request using openssl. The first step is creating a strong private key. At this moment the 2048bits is the recommended key lenght. Security experts are projecting that 2048 bits will be sufficient for commercial use until around the year 2030 (Reference1 and Reference2 pdf) openssl genrsa -out ~/niwi.be.key 2048 And the second step is create a proper csr (certificate request). I said proper because you should..." />
+    <meta name="author" content="Andrey Antukh" />
+
+    <link rel="stylesheet" href="https://www.niwi.nz/theme/css/main.css" />
+
+      <link href="https://www.niwi.nz/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="niwi.nz Atom Feed" />
+
+      <link href="https://www.niwi.nz/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="niwi.nz RSS Feed" />
+
+    <!--[if IE]>
+        <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!--[if lte IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie.css"/>
+        <script src="https://www.niwi.nz/js/IE8.js" type="text/javascript"></script>
+    <![endif]-->
+
+    <!--[if lt IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie6.css"/>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div id="wrap">
+      <div id="container">
+
+        <div class="entry">
+  <header>
+    <a href="https://www.niwi.nz"><small>(return to home)</small></a>
+    <h1>
+      <a href="https://www.niwi.nz/2015/03/25/generate-secure-certificate-request-with-openssl/" id="page-title">Generating a secure certificate request with OpenSSL</a>
+    </h1>
+    <div class="article-meta">
+        <small class="time">
+          Date:
+          <time datetime="2015-03-25T00:00:00+00:00">
+            Wed 25 March 2015
+          </time>
+        </small>
+      <br />
+      <small class="tags">
+        Tags:
+          <a href="https://www.niwi.nz/tag/security.html">security,           </a>
+          <a href="https://www.niwi.nz/tag/ssl.html">ssl          </a>
+      </small>
+
+      <br />
+      <small class="tags">
+        Author:
+          <span>Andrey Antukh</span>      </small>
+    </div>
+  </header>
+  <article>
+    <div id="article-content">
+      <p>This is a little cheat sheet for personal use on how generate a secure certificate
+request using openssl.</p>
+<p>The first step is creating a strong private key. At this moment the 2048bits is the recommended
+key lenght. Security experts are projecting that 2048 bits will be sufficient for commercial use
+until around the year 2030 (<a href="http://security.stackexchange.com/questions/65174/4096-bit-rsa-encryption-keys-vs-2048">Reference1</a>
+and <a href="http://csrc.nist.gov/publications/nistpubs/800-57/sp800-57_part1_rev3_general.pdf">Reference2 pdf</a>)</p>
+<div class="highlight"><pre><span></span><code>openssl genrsa -out ~/niwi.be.key <span class="m">2048</span>
+</code></pre></div>
+
+<p>And the second step is create a proper csr (certificate request). I said proper because
+you should expliclitly specify the secure hash algorith to use for sign. In this
+case it should never be <em>sha1</em> (<a href="https://konklone.com/post/why-google-is-hurrying-the-web-to-kill-sha-1">Reference1</a> and
+<a href="https://shaaaaaaaaaaaaa.com/">Reference2</a>)</p>
+<p>The recommended hash algorithm today is <em>sha256</em>:</p>
+<div class="highlight"><pre><span></span><code>openssl req -new -sha256 -key ~/niwi.be.key -out ~/niwi.be.csr
+</code></pre></div>
+
+<p>Here a little guide to different fields that you will found when creating the CSR:</p>
+<ul>
+<li><em>Common Name</em>: If you intend to secure the URL https://www.niwi.be, then your CSR's common name must be
+  <code>www.niwi.be</code>. If you plan on getting a wildcard certificate make sure to prefix your domain with an
+  asterisk, example: <code>*.niwi.be</code>.</li>
+<li><em>Organization</em>: The exact legal name of your organization. Example: <code>niwi.be</code>.</li>
+<li><em>Organization unit</em>: The section of your organization. Example: <code>IT</code>.</li>
+<li><em>City or Locality</em>: The legal city of your organization. Example: <code>Madrid</code>.</li>
+<li><em>State or Provice</em>: The legal province of your organization. Example: <code>Madrid</code>.</li>
+<li><em>Country</em>: The legal country of your organizationin ISO format: <code>ES</code>. (Full list <a href="http://www.vas.com/Tnotes/Country%20Codes.htm">here</a>)</li>
+</ul>
+<p>And the last step, you may verify your csr:</p>
+<div class="highlight"><pre><span></span><code>openssl req -noout -text -in ~/niwi.be.csr
+</code></pre></div>
+
+<p>This is a possible striped output with relevant information:</p>
+<div class="highlight"><pre><span></span><code>Certificate Request:
+    Data:
+        Version: 0 (0x0)
+        Subject: C=ES, ST=Madrid, L=Madrid, O=niwi.be, OU=IT, CN=*.niwi.be/emailAddress=niwi@niwi.be
+        [...]
+    Signature Algorithm: sha256WithRSAEncryption
+        [...]
+</code></pre></div>
+    </div>
+  </article>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

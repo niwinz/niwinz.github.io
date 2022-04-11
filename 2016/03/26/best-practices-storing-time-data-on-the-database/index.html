@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>niwi.nz : Best practices storing time data on the database</title>
+    <meta name=viewport content='width=200, initial-scale=1'>
+
+  <meta name="desciption" content="There is my personal list of best practices handling with time related data and its persistence. I assume they are for PostgreSQL in first time but that recommendations are almost the same for other databases: Set your database timezone to UTC or at least set the connection timezone to UTC and persists datetimes always in UTC. Perform any time related logic with datetimes in UTC Treat all non-zero UTC datetimes as an input error. Only translate datetimes to specific timezone when you go to..." />
+    <meta name="author" content="Andrey Antukh" />
+
+    <link rel="stylesheet" href="https://www.niwi.nz/theme/css/main.css" />
+
+      <link href="https://www.niwi.nz/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="niwi.nz Atom Feed" />
+
+      <link href="https://www.niwi.nz/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="niwi.nz RSS Feed" />
+
+    <!--[if IE]>
+        <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!--[if lte IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie.css"/>
+        <script src="https://www.niwi.nz/js/IE8.js" type="text/javascript"></script>
+    <![endif]-->
+
+    <!--[if lt IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie6.css"/>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div id="wrap">
+      <div id="container">
+
+        <div class="entry">
+  <header>
+    <a href="https://www.niwi.nz"><small>(return to home)</small></a>
+    <h1>
+      <a href="https://www.niwi.nz/2016/03/26/best-practices-storing-time-data-on-the-database/" id="page-title">Best practices storing time data on the database</a>
+    </h1>
+    <div class="article-meta">
+        <small class="time">
+          Date:
+          <time datetime="2016-03-26T00:00:00+00:00">
+            Sat 26 March 2016
+          </time>
+        </small>
+      <br />
+      <small class="tags">
+        Tags:
+          <a href="https://www.niwi.nz/tag/postgresql.html">postgresql,           </a>
+          <a href="https://www.niwi.nz/tag/time.html">time          </a>
+      </small>
+
+      <br />
+      <small class="tags">
+        Author:
+          <span>Andrey Antukh</span>      </small>
+    </div>
+  </header>
+  <article>
+    <div id="article-content">
+      <p>There is my personal list of best practices handling with time
+related data and its persistence. I assume they are for PostgreSQL
+in first time but that recommendations are almost the same for
+other databases:</p>
+<ul>
+<li>Set your database timezone to <code>UTC</code> or at least set the connection
+  timezone to <code>UTC</code> and persists datetimes always in <code>UTC</code>.</li>
+<li>Perform any time related logic with datetimes in <code>UTC</code></li>
+<li>Treat all non-zero UTC datetimes as an input error.</li>
+<li>Only translate datetimes to specific timezone when you go to
+  show them to the user.</li>
+<li>Persist the user timezone with apropriate timezone name
+  (e.g. <code>America/Los_Angeles</code>, not <code>+0200</code>).</li>
+</ul>
+<p>In case of PostgreSQL, the time handling is fantastic and using
+the <code>timestamptz</code> should be your almost always the default option.</p>
+<p>PostgreSQL by default stores all datetimes in UTC and only transforms
+them to different timezone when user request that:</p>
+<div class="highlight"><pre><span></span><code><span class="gp">test=#</span><span class="w"> </span><span class="k">create</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="n">foobar</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
+<span class="gp">test(#</span><span class="w">   </span><span class="n">id</span><span class="w"> </span><span class="nb">bigint</span><span class="p">,</span><span class="w"></span>
+<span class="gp">test(#</span><span class="w">   </span><span class="n">created_at</span><span class="w"> </span><span class="nb">timestamptz</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="k">current_timestamp</span><span class="w"></span>
+<span class="gp">test(#</span><span class="w"> </span><span class="p">);</span><span class="w"></span>
+<span class="go">CREATE TABLE</span>
+
+<span class="gp">test=#</span><span class="w"> </span><span class="k">insert</span><span class="w"> </span><span class="k">into</span><span class="w"> </span><span class="n">foobar</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">values</span><span class="w"> </span><span class="p">(</span><span class="mf">1</span><span class="p">);</span><span class="w"></span>
+<span class="go">INSERT 0 1</span>
+<span class="gp">test=#</span><span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">foobar</span><span class="p">;</span><span class="w"></span>
+<span class="go"> id |          created_at</span>
+<span class="go">----+-------------------------------</span>
+<span class="go">  1 | 2016-03-23 13:49:26.865655+00</span>
+
+<span class="gp">test=#</span><span class="w"> </span><span class="k">set</span><span class="w"> </span><span class="n">timezone</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s s-Name">&quot;Europe/Moscow&quot;</span><span class="p">;</span><span class="w"></span>
+<span class="go">SET</span>
+<span class="gp">test=#</span><span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">foobar</span><span class="p">;</span><span class="w"></span>
+<span class="go"> id |          created_at</span>
+<span class="go">----+-------------------------------</span>
+<span class="go">  1 | 2016-03-23 16:49:26.865655+03</span>
+</code></pre></div>
+
+<p>So if you are storing datetimes without timezone, PostgreSQL will
+assume the current timezone of the database and this may not match
+with the user's timezone; that in some ocasions can cause bugs showing
+unexpected datetimes.</p>
+<p>Also, we can't rely on the postgresql connection timezone because
+postgres knows nothing about the application's user timezone, so
+the most recommended approach here is setup <code>UTC</code> as default
+timezone in the database and leave to the application the
+responsability to convert datetimes to approriate timezone for
+presentation purposes only.</p>
+<p>To ensure that the application logic always persists using UTC, we
+can force for certain fields that the inserted values should always
+come in UTC timezone. This can be done using the <code>CHECK</code> clause:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">foobar</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
+<span class="w">  </span><span class="n">id</span><span class="w"> </span><span class="nb">bigint</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="n">some_date</span><span class="w"> </span><span class="n">timestamptz</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="c1">-- [...]</span>
+
+<span class="w">  </span><span class="k">CHECK</span><span class="p">(</span><span class="k">EXTRACT</span><span class="p">(</span><span class="n">TIMEZONE</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">some_date</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;0&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="p">);</span><span class="w"></span>
+</code></pre></div>
+
+<p>This is not a perfect solution but can you save from some bugs
+and in general is a very good practice.</p>
+<p>Another most common mistake is rely on the ORM defaults.
+A great example is <a href="http://hibernate.org/">Hibernate</a>, that setup's the datetime
+columns without timezone in the default dialect.</p>
+    </div>
+  </article>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

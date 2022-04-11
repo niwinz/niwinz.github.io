@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>niwi.nz : Show database, table and indexes size on PostgreSQL</title>
+    <meta name=viewport content='width=200, initial-scale=1'>
+
+  <meta name="desciption" content="Many times I have needed show how spaces is used on my databases, tables or indexes. Here I will try to explain in a concise and simple way to obtain this useful information. Show database size The simples way to show a database size, is executing this query: SELECT pg_size_pretty(pg_database_size(&#39;dbname&#39;)); pg_database_size function returns a size in bytes and pg_size_pretty put this value on more readable by humans. This is a possible result of this query: dbname=&gt; SELECT..." />
+    <meta name="author" content="Andrey Antukh" />
+
+    <link rel="stylesheet" href="https://www.niwi.nz/theme/css/main.css" />
+
+      <link href="https://www.niwi.nz/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="niwi.nz Atom Feed" />
+
+      <link href="https://www.niwi.nz/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="niwi.nz RSS Feed" />
+
+    <!--[if IE]>
+        <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!--[if lte IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie.css"/>
+        <script src="https://www.niwi.nz/js/IE8.js" type="text/javascript"></script>
+    <![endif]-->
+
+    <!--[if lt IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie6.css"/>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div id="wrap">
+      <div id="container">
+
+        <div class="entry">
+  <header>
+    <a href="https://www.niwi.nz"><small>(return to home)</small></a>
+    <h1>
+      <a href="https://www.niwi.nz/2013/02/17/postgresql-database-table-indexes-size/" id="page-title">Show database, table and indexes size on PostgreSQL</a>
+    </h1>
+    <div class="article-meta">
+        <small class="time">
+          Date:
+          <time datetime="2013-02-17T00:00:00+00:00">
+            Sun 17 February 2013
+          </time>
+        </small>
+      <br />
+      <small class="tags">
+        Tags:
+          <a href="https://www.niwi.nz/tag/postgresql.html">postgresql          </a>
+      </small>
+
+      <br />
+      <small class="tags">
+        Author:
+          <span>Andrey Antukh</span>      </small>
+    </div>
+  </header>
+  <article>
+    <div id="article-content">
+      <p>Many times I have needed show how spaces is used on my databases, tables or indexes. Here I will try to
+explain in a concise and simple way to obtain this useful information.</p>
+<div class="section" id="show-database-size">
+<h2>Show database size</h2>
+<p>The simples way to show a database size, is executing this query:</p>
+<div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_database_size</span><span class="p">(</span><span class="s1">&#39;dbname&#39;</span><span class="p">));</span><span class="w"></span>
+</pre></div>
+<p><tt class="docutils literal">pg_database_size</tt> function returns a size in bytes and <tt class="docutils literal">pg_size_pretty</tt> put this
+value on more readable by humans.</p>
+<p>This is a possible result of this query:</p>
+<div class="highlight"><pre><span></span><span class="gp">dbname=&gt;</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_database_size</span><span class="p">(</span><span class="s1">&#39;dbname&#39;</span><span class="p">));</span><span class="w"></span>
+<span class="go"> pg_size_pretty</span>
+<span class="go">----------------</span>
+<span class="go"> 76 MB</span>
+<span class="go">(1 row)</span>
+</pre></div>
+</div>
+<div class="section" id="show-relation-size">
+<h2>Show relation size</h2>
+<p>There are two ways to view a relation size. Relation as is, is a table or index on postgresql.</p>
+<p>Show table size, without indexes:</p>
+<div class="highlight"><pre><span></span><span class="gp">dbname=&gt;</span><span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_relation_size</span><span class="p">(</span><span class="s1">&#39;cities_region&#39;</span><span class="p">));</span><span class="w"></span>
+<span class="go"> pg_size_pretty</span>
+<span class="go">----------------</span>
+<span class="go"> 4224 kB</span>
+<span class="go">(1 row)</span>
+</pre></div>
+<p>Show table size with indexes:</p>
+<div class="highlight"><pre><span></span><span class="gp">dbname=&gt;</span><span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_total_relation_size</span><span class="p">(</span><span class="s1">&#39;cities_region&#39;</span><span class="p">));</span><span class="w"></span>
+<span class="go"> pg_size_pretty</span>
+<span class="go">----------------</span>
+<span class="go"> 18 MB</span>
+<span class="go">(1 row)</span>
+</pre></div>
+<p>With same way, you can show index size:</p>
+<div class="highlight"><pre><span></span><span class="gp">dbname=&gt;</span><span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_relation_size</span><span class="p">(</span><span class="s1">&#39;cities_region_name&#39;</span><span class="p">));</span><span class="w"></span>
+<span class="go"> pg_size_pretty</span>
+<span class="go">----------------</span>
+<span class="go"> 1688 kB</span>
+<span class="go">(1 row)</span>
+</pre></div>
+</div>
+<div class="section" id="show-list-of-biggest-relations-on-your-database">
+<h2>Show list of biggest relations on your database</h2>
+<p>Query thats shows last ten with their corresponding size.</p>
+<div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">relname</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="ss">&quot;relation&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_relation_size</span><span class="p">(</span><span class="k">C</span><span class="p">.</span><span class="n">oid</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="ss">&quot;size&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_class</span><span class="w"> </span><span class="k">C</span><span class="w"> </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">pg_namespace</span><span class="w"> </span><span class="n">N</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="p">(</span><span class="n">N</span><span class="p">.</span><span class="n">oid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">C</span><span class="p">.</span><span class="n">relnamespace</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">WHERE</span><span class="w"> </span><span class="n">nspname</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;pg_catalog&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;information_schema&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">pg_relation_size</span><span class="p">(</span><span class="k">C</span><span class="p">.</span><span class="n">oid</span><span class="p">)</span><span class="w"> </span><span class="k">DESC</span><span class="w"></span>
+<span class="w">  </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span><span class="w"></span>
+</pre></div>
+<p>This query output includes indexes and tables.</p>
+<p>Exameple output:</p>
+<div class="highlight"><pre><span></span><span class="gp">dbname=&gt;</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="n">relname</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="s s-Name">&quot;relation&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_relation_size</span><span class="p">(</span><span class="n">C</span><span class="mf">.</span><span class="n">oid</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="s s-Name">&quot;size&quot;</span><span class="w"></span>
+<span class="gp">dbname-&gt;</span><span class="w">   </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_class</span><span class="w"> </span><span class="n">C</span><span class="w"> </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">pg_namespace</span><span class="w"> </span><span class="n">N</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="p">(</span><span class="n">N</span><span class="mf">.</span><span class="n">oid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">C</span><span class="mf">.</span><span class="n">relnamespace</span><span class="p">)</span><span class="w"></span>
+<span class="gp">dbname-&gt;</span><span class="w">   </span><span class="k">WHERE</span><span class="w"> </span><span class="n">nspname</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;pg_catalog&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;information_schema&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="gp">dbname-&gt;</span><span class="w">   </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">pg_relation_size</span><span class="p">(</span><span class="n">C</span><span class="mf">.</span><span class="n">oid</span><span class="p">)</span><span class="w"> </span><span class="k">DESC</span><span class="w"></span>
+<span class="gp">dbname-&gt;</span><span class="w">   </span><span class="k">LIMIT</span><span class="w"> </span><span class="mf">10</span><span class="p">;</span><span class="w"></span>
+<span class="go">                   relation                   |  size</span>
+<span class="go">----------------------------------------------+---------</span>
+<span class="go"> cities_region                                | 4224 kB</span>
+<span class="go"> cities_city                                  | 3848 kB</span>
+<span class="go"> cities_city_region_id_name_key               | 1888 kB</span>
+<span class="go"> cities_region_name_like                      | 1768 kB</span>
+<span class="go"> cities_region_slug_like                      | 1760 kB</span>
+<span class="go"> cities_region_slug                           | 1744 kB</span>
+<span class="go"> django_session                               | 1736 kB</span>
+<span class="go"> cities_region_name                           | 1688 kB</span>
+<span class="go"> cities_city_country_id_401060b88e5285df_uniq | 1432 kB</span>
+<span class="go"> cities_region_geoname_id_key                 | 1384 kB</span>
+<span class="go">(10 rows)</span>
+</pre></div>
+<p>Also, this is a query thats shows last five tables with their corresponding size including indexes:</p>
+<div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">relname</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="ss">&quot;relation&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_total_relation_size</span><span class="p">(</span><span class="k">C</span><span class="p">.</span><span class="n">oid</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="ss">&quot;total_size&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_class</span><span class="w"> </span><span class="k">C</span><span class="w"></span>
+<span class="w">  </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">pg_namespace</span><span class="w"> </span><span class="n">N</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="p">(</span><span class="n">N</span><span class="p">.</span><span class="n">oid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">C</span><span class="p">.</span><span class="n">relnamespace</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">WHERE</span><span class="w"> </span><span class="n">nspname</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;pg_catalog&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;information_schema&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">AND</span><span class="w"> </span><span class="k">C</span><span class="p">.</span><span class="n">relkind</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="s1">&#39;i&#39;</span><span class="w"></span>
+<span class="w">    </span><span class="k">AND</span><span class="w"> </span><span class="n">nspname</span><span class="w"> </span><span class="o">!~</span><span class="w"> </span><span class="s1">&#39;^pg_toast&#39;</span><span class="w"></span>
+<span class="w">  </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">pg_total_relation_size</span><span class="p">(</span><span class="k">C</span><span class="p">.</span><span class="n">oid</span><span class="p">)</span><span class="w"> </span><span class="k">DESC</span><span class="w"></span>
+<span class="w">  </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span><span class="w"></span>
+</pre></div>
+<p>This is a posible output:</p>
+<div class="highlight"><pre><span></span><span class="gp">dbname=&gt;</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="n">relname</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="s s-Name">&quot;relation&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="gp">dbname-&gt;</span><span class="w">     </span><span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_total_relation_size</span><span class="p">(</span><span class="n">C</span><span class="mf">.</span><span class="n">oid</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="s s-Name">&quot;total_size&quot;</span><span class="w"></span>
+<span class="gp">dbname-&gt;</span><span class="w">   </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_class</span><span class="w"> </span><span class="n">C</span><span class="w"></span>
+<span class="gp">dbname-&gt;</span><span class="w">   </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">pg_namespace</span><span class="w"> </span><span class="n">N</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="p">(</span><span class="n">N</span><span class="mf">.</span><span class="n">oid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">C</span><span class="mf">.</span><span class="n">relnamespace</span><span class="p">)</span><span class="w"></span>
+<span class="gp">dbname-&gt;</span><span class="w">   </span><span class="k">WHERE</span><span class="w"> </span><span class="n">nspname</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;pg_catalog&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;information_schema&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="gp">dbname-&gt;</span><span class="w">     </span><span class="k">AND</span><span class="w"> </span><span class="n">C</span><span class="mf">.</span><span class="n">relkind</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="s1">&#39;i&#39;</span><span class="w"></span>
+<span class="gp">dbname-&gt;</span><span class="w">     </span><span class="k">AND</span><span class="w"> </span><span class="n">nspname</span><span class="w"> </span><span class="o">!~</span><span class="w"> </span><span class="s1">&#39;^pg_toast&#39;</span><span class="w"></span>
+<span class="gp">dbname-&gt;</span><span class="w">   </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">pg_total_relation_size</span><span class="p">(</span><span class="n">C</span><span class="mf">.</span><span class="n">oid</span><span class="p">)</span><span class="w"> </span><span class="k">DESC</span><span class="w"></span>
+<span class="gp">dbname-&gt;</span><span class="w">   </span><span class="k">LIMIT</span><span class="w"> </span><span class="mf">5</span><span class="p">;</span><span class="w"></span>
+<span class="go">    relation     | total_size</span>
+<span class="go">-----------------+------------</span>
+<span class="go"> cities_region   | 18 MB</span>
+<span class="go"> cities_city     | 17 MB</span>
+<span class="go"> auth_user       | 3048 kB</span>
+<span class="go"> django_session  | 3024 kB</span>
+<span class="go"> profile_profile | 3016 kB</span>
+<span class="go">(5 rows)</span>
+</pre></div>
+<div class="section" id="related-links">
+<h3>Related links</h3>
+<ul class="simple">
+<li><a class="reference external" href="http://wiki.postgresql.org/wiki/Disk_Usage">http://wiki.postgresql.org/wiki/Disk_Usage</a></li>
+</ul>
+</div>
+</div>
+
+    </div>
+  </article>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

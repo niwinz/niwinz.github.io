@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>niwi.nz : Multimethods with python3</title>
+    <meta name=viewport content='width=200, initial-scale=1'>
+
+  <meta name="desciption" content="After using clojure for some time on my hobby projects, I find clojure&#39;s multimethods feature really exciting. In popular words, multimethods provides &#34;polymorphism a la carte&#34;. I thought it was funny to try implement that using python3. Amazingly, the result seems very expressive and maybe it is can be more flexible than singledispatch. Implementation details Let see how it is implemented. from inspect import isclass def isa(cls_child, cls_parent) -&gt; bool: if not..." />
+    <meta name="author" content="Andrey Antukh" />
+
+    <link rel="stylesheet" href="https://www.niwi.nz/theme/css/main.css" />
+
+      <link href="https://www.niwi.nz/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="niwi.nz Atom Feed" />
+
+      <link href="https://www.niwi.nz/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="niwi.nz RSS Feed" />
+
+    <!--[if IE]>
+        <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!--[if lte IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie.css"/>
+        <script src="https://www.niwi.nz/js/IE8.js" type="text/javascript"></script>
+    <![endif]-->
+
+    <!--[if lt IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie6.css"/>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div id="wrap">
+      <div id="container">
+
+        <div class="entry">
+  <header>
+    <a href="https://www.niwi.nz"><small>(return to home)</small></a>
+    <h1>
+      <a href="https://www.niwi.nz/2015/01/10/clojure-like-multimethods-in-python3/" id="page-title">Multimethods with python3</a>
+    </h1>
+    <div class="article-meta">
+        <small class="time">
+          Date:
+          <time datetime="2015-01-10T00:00:00+00:00">
+            Sat 10 January 2015
+          </time>
+        </small>
+      <br />
+      <small class="tags">
+        Tags:
+          <a href="https://www.niwi.nz/tag/clojure.html">clojure,           </a>
+          <a href="https://www.niwi.nz/tag/python.html">python          </a>
+      </small>
+
+      <br />
+      <small class="tags">
+        Author:
+          <span>Andrey Antukh</span>      </small>
+    </div>
+  </header>
+  <article>
+    <div id="article-content">
+      <p>After using clojure for some time on my hobby projects, I find clojure's multimethods
+feature really exciting. In popular words, multimethods provides "polymorphism a la carte".</p>
+<p>I thought it was funny to try implement that using python3. Amazingly, the result seems
+very expressive and maybe it is can be more flexible than singledispatch.</p>
+<h2>Implementation details</h2>
+<p>Let see how it is implemented.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">inspect</span> <span class="kn">import</span> <span class="n">isclass</span>
+
+<span class="k">def</span> <span class="nf">isa</span><span class="p">(</span><span class="n">cls_child</span><span class="p">,</span> <span class="n">cls_parent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">isclass</span><span class="p">(</span><span class="n">cls_child</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">isclass</span><span class="p">(</span><span class="n">cls_parent</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">return</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">cls_child</span><span class="p">,</span> <span class="n">cls_parent</span><span class="p">)</span>
+</code></pre></div>
+
+<p>The <code>isa</code> function is a helper function for safe check if one class is subclass of other, and
+it is used in one of two matching search process.</p>
+<p>Then, multimethod is implemented using a plain python class with callable interface. That additionally
+exposes methods for easy register implementations using python decorator syntax.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">threading</span> <span class="kn">import</span> <span class="n">Lock</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
+
+<span class="k">class</span> <span class="nc">_multimethod</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dispatch</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="n">dispatch</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="bp">self</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">dispatch</span><span class="o">.</span><span class="vm">__doc__</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dispatch</span> <span class="o">=</span> <span class="n">dispatch</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dispatch_entries</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dispatch_cache</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dispatch_default</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mutex</span> <span class="o">=</span> <span class="n">Lock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_notfound</span> <span class="o">=</span> <span class="nb">object</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">register</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">func</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">func</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">register</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mutex</span><span class="p">:</span>
+            <span class="n">_callable</span> <span class="o">=</span> <span class="n">_multimethod_callable</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">func</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dispatch_entries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_callable</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">register_default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dispatch_default</span> <span class="o">=</span> <span class="n">_multimethod_callable</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">func</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mutex</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+
+        <span class="c1"># Calculate the dispatch value</span>
+        <span class="n">dispatch_match</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dispatch</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># If a dispatch resolution is already</span>
+        <span class="c1"># exists in cache, use it as is. It</span>
+        <span class="c1"># just an optimization for avoid compute</span>
+        <span class="c1"># the resoultion in each call.</span>
+        <span class="k">if</span> <span class="n">dispatch_match</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dispatch_cache</span><span class="p">:</span>
+            <span class="n">dispatch_func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dispatch_cache</span><span class="p">[</span><span class="n">dispatch_match</span><span class="p">]</span>
+
+            <span class="c1"># Explicit release lock befor execute the method.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_mutex</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">dispatch_func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># If no resolution found on cache, start the first</span>
+        <span class="c1"># search iteration using isa? method.</span>
+        <span class="k">for</span> <span class="n">dispatch_func</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dispatch_entries</span><span class="p">:</span>
+            <span class="n">dispatch_value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">dispatch_func</span><span class="p">,</span> <span class="s2">&quot;_dispatch_value&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_notfound</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">dispatch_value</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">_notfound</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="n">isa</span><span class="p">(</span><span class="n">dispatch_value</span><span class="p">,</span> <span class="n">dispatch_match</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_dispatch_cache</span><span class="p">[</span><span class="n">dispatch_match</span><span class="p">]</span> <span class="o">=</span> <span class="n">dispatch_func</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_mutex</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+                <span class="k">return</span> <span class="n">dispatch_func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># If no resolution foun on first iteration, go to</span>
+        <span class="c1"># the second iteration using == operator.</span>
+        <span class="k">for</span> <span class="n">dispatch_func</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dispatch_entries</span><span class="p">:</span>
+            <span class="n">dispatch_value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">dispatch_func</span><span class="p">,</span> <span class="s2">&quot;_dispatch_value&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_notfound</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">dispatch_value</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">_notfound</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="n">dispatch_value</span> <span class="o">==</span> <span class="n">dispatch_match</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_dispatch_cache</span><span class="p">[</span><span class="n">dispatch_match</span><span class="p">]</span> <span class="o">=</span> <span class="n">dispatch_func</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_mutex</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+                <span class="k">return</span> <span class="n">dispatch_func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># If we are here, so no match is found.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mutex</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dispatch_default</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;No match found.&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dispatch_default</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</code></pre></div>
+
+<p>The registred functions are wrapped with simple callable class: <code>_multimethod_callable</code>.
+This really can be done with adding a property to function instance directly, but I don't
+like mutation.</p>
+<p><code>_multimethod_callable</code> is defined like this:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">_multimethod_callable</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Callable wrapper. The main purpose of this</span>
+<span class="sd">    callable container is not mutate the registered</span>
+<span class="sd">    function in a multimethod with dispatch value.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dispatch_value</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_callable</span> <span class="o">=</span> <span class="n">func</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dispatch_value</span> <span class="o">=</span> <span class="n">dispatch_value</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_callable</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</code></pre></div>
+
+<p>And finally, the api is exposed by simple decorator function:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">multimethod</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Decorator that creates multimethods.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_multimethod</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Obvioulsy, this implementation does not cover all use cases of clojure multimethods
+but I think is good result for an experiment.</p>
+<h2>Usage examples</h2>
+<p>As first example, we have a <code>say_hello</code> multimethod that geets dispatching by
+person language.</p>
+<p>Here a multimethod definition:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@multimethod</span>
+<span class="k">def</span> <span class="nf">say_hello</span><span class="p">(</span><span class="n">person</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">person</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;lang&quot;</span><span class="p">,</span> <span class="s2">&quot;es&quot;</span><span class="p">)</span>
+
+<span class="nd">@say_hello</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;es&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">say_hello</span><span class="p">(</span><span class="n">person</span><span class="p">):</span>
+    <span class="k">return</span> <span class="s2">&quot;Hola </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">person</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">])</span>
+
+<span class="nd">@say_hello</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;en&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">say_hello</span><span class="p">(</span><span class="n">person</span><span class="p">):</span>
+    <span class="k">return</span> <span class="s2">&quot;Hello </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">person</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">])</span>
+</code></pre></div>
+
+<p>And having this sample data, this is a result:</p>
+<div class="highlight"><pre><span></span><code><span class="n">person_es</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Foo&quot;</span><span class="p">,</span> <span class="s2">&quot;lang&quot;</span><span class="p">:</span> <span class="s2">&quot;es&quot;</span><span class="p">}</span>
+<span class="n">person_en</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Bar&quot;</span><span class="p">,</span> <span class="s2">&quot;lang&quot;</span><span class="p">:</span> <span class="s2">&quot;en&quot;</span><span class="p">}</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">say_hello</span><span class="p">(</span><span class="n">person_en</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">say_hello</span><span class="p">(</span><span class="n">person_es</span><span class="p">))</span>
+
+<span class="c1"># =&gt; &quot;Hello Foo&quot;</span>
+<span class="c1"># =&gt; &quot;Hola Bar&quot;</span>
+</code></pre></div>
+
+<p>Another example, uses multiple value dispatching and also has fallback implementation.</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@multimethod</span>
+<span class="k">def</span> <span class="nf">do_stuff</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">),</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;b&quot;</span><span class="p">))</span>
+
+<span class="nd">@do_stuff</span><span class="o">.</span><span class="n">register</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+<span class="k">def</span> <span class="nf">do_stuff</span><span class="p">(</span><span class="n">_</span><span class="p">):</span>
+    <span class="k">return</span> <span class="s2">&quot;foo&quot;</span>
+
+<span class="nd">@do_stuff</span><span class="o">.</span><span class="n">register</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+<span class="k">def</span> <span class="nf">do_stuff</span><span class="p">(</span><span class="n">_</span><span class="p">):</span>
+    <span class="k">return</span> <span class="s2">&quot;bar&quot;</span>
+
+<span class="nd">@do_stuff</span><span class="o">.</span><span class="n">register_default</span>
+<span class="k">def</span> <span class="nf">do_stuff</span><span class="p">(</span><span class="n">_</span><span class="p">):</span>
+    <span class="k">return</span> <span class="s2">&quot;baz&quot;</span>
+</code></pre></div>
+
+<p>Let see how the result of using the <code>do_stuff</code> multimethod:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">print</span><span class="p">(</span><span class="n">do_stuff</span><span class="p">({</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">do_stuff</span><span class="p">({</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">do_stuff</span><span class="p">({</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}))</span>
+
+<span class="c1"># =&gt; &quot;foo&quot;</span>
+<span class="c1"># =&gt; &quot;bar&quot;</span>
+<span class="c1"># =&gt; &quot;baz&quot;</span>
+</code></pre></div>
+
+<h2>Links</h2>
+<p>You can found more about multimethods on clojure documentation: <a href="http://clojure.org/multimethods">http://clojure.org/multimethods</a></p>
+<p>The complete source of this post: <a href="https://gist.github.com/niwibe/27a91ae399e5de5dba10">https://gist.github.com/niwibe/27a91ae399e5de5dba10</a></p>
+    </div>
+  </article>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

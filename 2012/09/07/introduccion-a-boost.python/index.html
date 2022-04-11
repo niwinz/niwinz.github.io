@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>niwi.nz : Introducción a boost::python con python3</title>
+    <meta name=viewport content='width=200, initial-scale=1'>
+
+  <meta name="desciption" content="Hay varias maneras de extender python con lenguajes de mas bajo nivel (C / C++). Entre ellas la oficial, con la api de C estandar. Tambien existen alternativas como cython que permiten traducir código python a C (para mas información mirar la documentación oficial). La idea de este articulo (igual, posteriormente algunos mas) es explicar como crear módulos en C++ para python3 con una api simple y no intrusiva, gracias a Boost::Python. Ejemplo 1: exponer una función c++ a python. Como no, la..." />
+    <meta name="author" content="Andrey Antukh" />
+
+    <link rel="stylesheet" href="https://www.niwi.nz/theme/css/main.css" />
+
+      <link href="https://www.niwi.nz/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="niwi.nz Atom Feed" />
+
+      <link href="https://www.niwi.nz/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="niwi.nz RSS Feed" />
+
+    <!--[if IE]>
+        <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!--[if lte IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie.css"/>
+        <script src="https://www.niwi.nz/js/IE8.js" type="text/javascript"></script>
+    <![endif]-->
+
+    <!--[if lt IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie6.css"/>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div id="wrap">
+      <div id="container">
+
+        <div class="entry">
+  <header>
+    <a href="https://www.niwi.nz"><small>(return to home)</small></a>
+    <h1>
+      <a href="https://www.niwi.nz/2012/09/07/introduccion-a-boost.python/" id="page-title">Introducción a boost::python con python3</a>
+    </h1>
+    <div class="article-meta">
+        <small class="time">
+          Date:
+          <time datetime="2012-09-07T00:00:00+00:00">
+            Fri 07 September 2012
+          </time>
+        </small>
+      <br />
+      <small class="tags">
+        Tags:
+          <a href="https://www.niwi.nz/tag/python.html">python,           </a>
+          <a href="https://www.niwi.nz/tag/python3.html">python3,           </a>
+          <a href="https://www.niwi.nz/tag/c.html">c++,           </a>
+          <a href="https://www.niwi.nz/tag/boost.html">boost          </a>
+      </small>
+
+      <br />
+      <small class="tags">
+        Author:
+          <span>Andrey Antukh</span>      </small>
+    </div>
+  </header>
+  <article>
+    <div id="article-content">
+      <p>Hay varias maneras de extender python con lenguajes de mas bajo nivel (C / C++). Entre ellas la oficial, con la api de C estandar. Tambien existen alternativas como cython que permiten traducir código python a C (para mas información mirar la documentación oficial).</p>
+<p>La idea de este articulo (igual, posteriormente algunos mas) es explicar como crear módulos en C++ para python3 con una api simple y no intrusiva, gracias a <a href="http://www.boost.org/doc/libs/1_51_0/libs/python/doc/">Boost::Python</a>.</p>
+<h2>Ejemplo 1: exponer una función c++ a python.</h2>
+<p>Como no, la mejor manera de enseñar como funcionan las cosas que con un buen ejemplo. Como dice bien el titulo, la idea principal es exponer una función en C++ a python y usarla desde python.</p>
+<div class="highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;boost/python.hpp&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;boost/lexical_cast.hpp&gt;</span><span class="cp"></span>
+
+<span class="k">using</span><span class="w"> </span><span class="n">boost</span><span class="o">::</span><span class="n">lexical_cast</span><span class="p">;</span><span class="w"></span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">py</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">boost</span><span class="o">::</span><span class="nn">python</span><span class="p">;</span><span class="w"></span>
+
+<span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="nf">to_str</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">lexical_cast</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="p">(</span><span class="n">x</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+
+<span class="cm">/*</span>
+<span class="cm"> * Macro de Boost::Python que expone el modulo</span>
+<span class="cm"> * de python con los metodos que nosotros especificamos</span>
+<span class="cm">*/</span><span class="w"></span>
+
+<span class="n">BOOST_PYTHON_MODULE</span><span class="p">(</span><span class="n">example1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">py</span><span class="o">::</span><span class="n">def</span><span class="p">(</span><span class="s">&quot;to_str&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">to_str</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</code></pre></div>
+
+<p>Colocamos esto, por ejemplo en <code>example1.cpp</code>, y lo compilamos. Nota, en este tutorial se utiliza <code>clang++</code> como compilador por defecto, si desea utilizar gcc, las diferencias deben ser mínimas en lo que se refiere a la instrucción que hay que ejecutar para compilar el modulo.</p>
+<div class="highlight"><pre><span></span><code><span class="go">clang++ -std=c++11 example1.cpp -shared -o example1.so -l boost_python3 -I /usr/include/python3.2mu -fpic</span>
+</code></pre></div>
+
+<p>Luego, para probar el modulo, podemos utilizar el siguiente código python como ejemplo:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">example1</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">example1</span><span class="o">.</span><span class="n">to_str</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">result</span><span class="p">),</span> <span class="n">result</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Y obtenemos el siguiente resultado:</p>
+<div class="highlight"><pre><span></span><code><span class="go">[3/5.0.0]niwi@niwi:~/tmp&gt; python3 example1.py</span>
+<span class="go">&lt;class &#39;str&#39;&gt; 2</span>
+</code></pre></div>
+
+<p>Como se ha visto, exponer una función de c++ a python es trivial, si es muy util si tenemos calculos complicados que puedan rendir mejor si estubieran en C++ y el resto de logica menos importante en python. Permite de una manera simple transladar ciertas partes criticas a un lenguaje de mas bajo nivel.</p>
+<h2>Ejemplo 2: exponer una simple clase.</h2>
+<p>Una vez visto el trivial ejemplo de como exponer una simple funcion, vamos a dar un paso mas y exponer una clase de C++ con sus metodos y atributos.</p>
+<div class="highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;boost/python.hpp&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;boost/lexical_cast.hpp&gt;</span><span class="cp"></span>
+
+<span class="k">namespace</span><span class="w"> </span><span class="nn">py</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">boost</span><span class="o">::</span><span class="nn">python</span><span class="p">;</span><span class="w"></span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Person</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">public</span><span class="o">:</span><span class="w"></span>
+<span class="w">    </span><span class="n">Person</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">Person</span><span class="p">(</span><span class="s">&quot;Unnamed&quot;</span><span class="p">);</span><span class="w"> </span><span class="p">};</span><span class="w"></span>
+<span class="w">    </span><span class="n">Person</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="n">full_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">set_name</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">full_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">name</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">get_name</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">visible</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">full_name</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">(</span><span class="s">&quot;Anonymous&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">set_visibility</span><span class="p">(</span><span class="kt">bool</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">visible</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">get_visibility</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">visible</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="k">private</span><span class="o">:</span><span class="w"></span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">full_name</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">visible</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="n">BOOST_PYTHON_MODULE</span><span class="p">(</span><span class="n">example2</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">py</span><span class="o">::</span><span class="n">class_</span><span class="o">&lt;</span><span class="n">Person</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;Person&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">def</span><span class="p">(</span><span class="n">py</span><span class="o">::</span><span class="n">init</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="p">())</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">def</span><span class="p">(</span><span class="s">&quot;set_visibility&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Person</span><span class="o">::</span><span class="n">set_visibility</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">add_property</span><span class="p">(</span><span class="s">&quot;full_name&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Person</span><span class="o">::</span><span class="n">get_name</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Person</span><span class="o">::</span><span class="n">set_name</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">add_property</span><span class="p">(</span><span class="s">&quot;visibility&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Person</span><span class="o">::</span><span class="n">get_visibility</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</code></pre></div>
+
+<p>Puede compilar este modulo igual que el primer ejemplo, solo cambiando el nombre de fichero del código fuente. Ahora probaremos el modulo con el siguiente código python:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">example2</span>
+
+<span class="n">p</span> <span class="o">=</span> <span class="n">example2</span><span class="o">.</span><span class="n">Person</span><span class="p">(</span><span class="s2">&quot;Andrey&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">full_name</span><span class="p">)</span>
+
+<span class="n">p</span><span class="o">.</span><span class="n">full_name</span> <span class="o">=</span> <span class="s2">&quot;Andrey Antukh&quot;</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">full_name</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">visibility</span><span class="p">)</span>
+
+<span class="n">p</span><span class="o">.</span><span class="n">set_visibility</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">full_name</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">visibility</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Con un resultado de la ejecucion:</p>
+<div class="highlight"><pre><span></span><code><span class="go">[3/5.0.0]niwi@niwi:~/tmp&gt; python3 example2.py</span>
+<span class="go">Andrey</span>
+<span class="go">Andrey Antukh True</span>
+<span class="go">Anonymous False</span>
+</code></pre></div>
+
+<p>Para entender un poquito, aun que creo que se entiende solo con ver el ejemplo, voy a explicar un poco las partes que componen el bloque de la macro de boost::python.Para empezar tenemos <code>py::class_&lt;&gt;</code> con la que indicamos que queremos exponer la clase, y con el nombre tal. Ademas podemos pasarle como segundo argimento la función <code>py::init&lt;&gt;</code>  para especificarle el constructor por defecto. Como en este caso no le pasamos, el usa el por defecto, es decir el que no requiere ningun argumento.</p>
+<p>A continuacion, se definen las funciones miembro de la clase que se quiere exponer mediante el metodo <code>py::def</code>, esto es igual que el primer ejemplo solo que con la variación de que tiene que exponer un metodo miembro de una clase y no una simple funcion. Y luego, por ultimo tenemos <code>add_property</code> con la que podemos añadir propertyes de clases de python con un setter y un getter. Si omitimos el setter, la property queda en modo solo lectura.</p>
+<p>Existen otros metodos para exponer atributos publicos directamente sin seters y getters, y otras muchas opciones que pueden ser consultado en la documentación oficial.</p>
+<p>Con esto termina esta parte, y en un futuro veo de continuar explicar mas detalles de <code>Boost::Python</code> en otros articulos.</p>
+    </div>
+  </article>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

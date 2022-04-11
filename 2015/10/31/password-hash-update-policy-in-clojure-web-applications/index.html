@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>niwi.nz : Password hash update policy in Clojure web applications</title>
+    <meta name=viewport content='width=200, initial-scale=1'>
+
+  <meta name="desciption" content="Choice a strong password hasher for the modern web application is not very complicated thing. At this moment the two most used algorithms are pbkdf2 and bcrypt, so probably you should use one of them or any of their variants such as bcrypt+sha512 (buddy&#39;s default) or pbkdf2+sha256. The both algorithms works in a similar way: iterate the algoritm N times for make it slower. The security mainly consists on increase the iteration number over time for make it slower acordly to the current..." />
+    <meta name="author" content="Andrey Antukh" />
+
+    <link rel="stylesheet" href="https://www.niwi.nz/theme/css/main.css" />
+
+      <link href="https://www.niwi.nz/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="niwi.nz Atom Feed" />
+
+      <link href="https://www.niwi.nz/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="niwi.nz RSS Feed" />
+
+    <!--[if IE]>
+        <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!--[if lte IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie.css"/>
+        <script src="https://www.niwi.nz/js/IE8.js" type="text/javascript"></script>
+    <![endif]-->
+
+    <!--[if lt IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie6.css"/>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div id="wrap">
+      <div id="container">
+
+        <div class="entry">
+  <header>
+    <a href="https://www.niwi.nz"><small>(return to home)</small></a>
+    <h1>
+      <a href="https://www.niwi.nz/2015/10/31/password-hash-update-policy-in-clojure-web-applications/" id="page-title">Password hash update policy in Clojure web applications</a>
+    </h1>
+    <div class="article-meta">
+        <small class="time">
+          Date:
+          <time datetime="2015-10-31T00:00:00+00:00">
+            Sat 31 October 2015
+          </time>
+        </small>
+      <br />
+      <small class="tags">
+        Tags:
+          <a href="https://www.niwi.nz/tag/clojure.html">clojure,           </a>
+          <a href="https://www.niwi.nz/tag/security.html">security,           </a>
+          <a href="https://www.niwi.nz/tag/auth.html">auth          </a>
+      </small>
+
+      <br />
+      <small class="tags">
+        Author:
+          <span>Andrey Antukh</span>      </small>
+    </div>
+  </header>
+  <article>
+    <div id="article-content">
+      <p>Choice a strong password hasher for the modern web application is not very
+complicated thing. At this moment the two most used algorithms are <a href="https://en.wikipedia.org/wiki/PBKDF2"><strong>pbkdf2</strong></a>
+and <a href="https://en.wikipedia.org/wiki/Bcrypt"><strong>bcrypt</strong></a>, so probably you should use one of them or any of their variants
+such as <strong>bcrypt+sha512</strong> (buddy's default) or <strong>pbkdf2+sha256</strong>.</p>
+<p>The both algorithms works in a similar way: iterate the algoritm N times for make
+it slower. The security mainly consists on increase the iteration number over
+time for make it slower acordly to the current security standart. For example on
+the moment of write this article, 20000 is the recommeded iteration number for
+pbkdf2 and 12 for bcrypt.</p>
+<p>Choice a strong algorithm is important thing, but have a good update
+password-hashes policy is also very important and usually completelly forgotten.
+The password generated 3 years ago is weaker that one generated today...</p>
+<p>In recent work on <a href="https://github.com/funcool/buddy-hashers">buddy-hashers</a> (version 0.8.0), this kind of problem can be
+easily solved in clojure applications using a special hook that will be called
+in the password check process when the password is correct but its configuration
+is weaker that the current one.</p>
+<p>Let see some code:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="nf">require</span> <span class="o">&#39;</span><span class="p">[</span><span class="nv">buddy.hashers</span> <span class="ss">:as</span> <span class="nv">hs</span><span class="p">])</span>
+
+<span class="p">(</span><span class="nf">letfn</span> <span class="p">[(</span><span class="nf">password-setter</span> <span class="p">[</span><span class="nv">password</span><span class="p">]</span>
+          <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">newpwd</span> <span class="p">(</span><span class="nf">hs/encrypt</span> <span class="nv">password</span><span class="p">)]</span>
+            <span class="p">(</span><span class="nf">update-password-in-db</span> <span class="nv">newpwd</span><span class="p">)))]</span>
+  <span class="p">(</span><span class="nf">hs/check</span> <span class="s">&quot;incoming-password&quot;</span> <span class="nv">password-from-db</span> <span class="p">{</span><span class="ss">:setter</span> <span class="nv">password-setter</span><span class="p">}))</span>
+</code></pre></div>
+
+<p>This kind of code can be placed in the login part of your web application
+and every time the users are logged their passwords are checked. If the password
+passed the validation but it looks weaker the hook will be called; enabling a
+simple entry point for properly rehash the password and store it again in the
+database.</p>
+<p>In reality, this is a very small and insignificant feature, but it makes the things
+much easier for maintain the passwords of your application users updated with the
+stongest password hasher configuration.</p>
+    </div>
+  </article>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,380 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>niwi.nz - Alejandro Gómez</title><link href="https://www.niwi.nz/" rel="alternate"></link><link href="https://www.niwi.nz/feeds/alejandro-gomez.atom.xml" rel="self"></link><id>https://www.niwi.nz/</id><updated>2016-03-05T00:00:00+00:00</updated><entry><title>Fetching and aggregating data from remote sources with Urania</title><link href="https://www.niwi.nz/2016/03/05/fetching-and-aggregating-remote-data-with-urania/" rel="alternate"></link><published>2016-03-05T00:00:00+00:00</published><updated>2016-03-05T00:00:00+00:00</updated><author><name>Alejandro Gómez</name></author><id>tag:www.niwi.nz,2016-03-05:/2016/03/05/fetching-and-aggregating-remote-data-with-urania/</id><summary type="html">&lt;h2&gt;The problem&lt;/h2&gt;
+&lt;p&gt;Oftentimes, our software relies on fetching and aggregating data from remote sources. Be it a database,
+an API exposed via HTTP or another protocol, the filesystem, or a cache. Remote data sources often have
+latency associated to them, and there may be unavailable due to network conditions.&lt;/p&gt;
+&lt;p&gt;When …&lt;/p&gt;</summary><content type="html">&lt;h2&gt;The problem&lt;/h2&gt;
+&lt;p&gt;Oftentimes, our software relies on fetching and aggregating data from remote sources. Be it a database,
+an API exposed via HTTP or another protocol, the filesystem, or a cache. Remote data sources often have
+latency associated to them, and there may be unavailable due to network conditions.&lt;/p&gt;
+&lt;p&gt;When implementing business logic relying on remote data sources, we often have to complect many concerns:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;The actual data transformation and aggregation&lt;/li&gt;
+&lt;li&gt;Fetching the data optimally for minimizing latency&lt;ul&gt;
+&lt;li&gt;Deduplication&lt;/li&gt;
+&lt;li&gt;Caching&lt;/li&gt;
+&lt;li&gt;Batching&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;Detecting and handling errors&lt;ul&gt;
+&lt;li&gt;Performing retries&lt;/li&gt;
+&lt;li&gt;Using timeouts for aborting fetches&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;All of this can make us trade code clarity for performance, and our business logic gets buried in low-level
+details.&lt;/p&gt;
+&lt;h3&gt;Enter Urania&lt;/h3&gt;
+&lt;p&gt;&lt;a href="https://github.com/funcool/urania"&gt;Urania&lt;/a&gt; makes your business logic relying on remote data sources efficient and free of the minutiae of optimization
+and error handling. It achieves this goals with two core ideas:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Using the Promise type available in &lt;a href="https://github.com/funcool/promesa"&gt;Promesa&lt;/a&gt; for conveying asynchronous values which can fail&lt;/li&gt;
+&lt;li&gt;Separating the declaration of a fetch from its interpretation and applying optimizations when interpreted&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Case study&lt;/h2&gt;
+&lt;p&gt;We'll be using a few Clojure libraries for the example, you can use the following &lt;code&gt;project.clj&lt;/code&gt; if you want to run
+the code:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;defproject &lt;/span&gt;&lt;span class="nv"&gt;hello-urania&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;0.1.0&amp;quot;&lt;/span&gt;
+  &lt;span class="ss"&gt;:dependencies&lt;/span&gt; &lt;span class="p"&gt;[[&lt;/span&gt;&lt;span class="nv"&gt;org.clojure/clojure&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;1.7.0&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+                 &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;funcool/urania&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;0.1.0&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+                 &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;funcool/promesa&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;0.8.1&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+                 &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;funcool/httpurr&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;0.5.0-SNAPSHOT&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+                 &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;org.clojure/data.json&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;0.2.6&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+                 &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;aleph&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;0.4.1-beta4&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+                 &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;funcool/suricatta&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;0.8.1&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+                 &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;org.postgresql/postgresql&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;9.4-1204-jdbc42&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]])&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Imagine that we are running a website which has a relational database and stores the information about its users in
+there. We are exposing an API for asking several questions about our users, for example their GitHub username. These
+queries will have to fetch data from our relational DB, as well as from GitHub and potentially other sources.&lt;/p&gt;
+&lt;p&gt;We want to make these queries composable, efficient, and free of the details of asynchronous data fetching and we'll use
+Urania to achieve that. First of all, we are going to create our relational database. We'll be using the &lt;a href="https://github.com/funcool/suricatta"&gt;suricatta&lt;/a&gt; library
+for running SQL queries against a PostgreSQL db:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;require&lt;/span&gt; &lt;span class="o"&gt;&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;suricatta.core&lt;/span&gt; &lt;span class="ss"&gt;:as&lt;/span&gt; &lt;span class="nv"&gt;sc&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;def &lt;/span&gt;&lt;span class="nv"&gt;dbspec&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:subprotocol&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;postgresql&amp;quot;&lt;/span&gt;
+             &lt;span class="ss"&gt;:subname&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;//localhost:5432/urania&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;})&lt;/span&gt;
+
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;def &lt;/span&gt;&lt;span class="nv"&gt;db&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;sc/context&lt;/span&gt; &lt;span class="nv"&gt;dbspec&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;We create and populate our only table: users.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;sc/execute&lt;/span&gt; &lt;span class="nv"&gt;db&lt;/span&gt;
+            &lt;span class="s"&gt;&amp;quot;CREATE TABLE users (&lt;/span&gt;
+&lt;span class="s"&gt;               id BIGSERIAL PRIMARY KEY,&lt;/span&gt;
+&lt;span class="s"&gt;               githubid VARCHAR(255) UNIQUE NOT NULL&lt;/span&gt;
+&lt;span class="s"&gt;             )&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="c1"&gt;;; =&amp;gt; 0&lt;/span&gt;
+
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;sc/execute&lt;/span&gt; &lt;span class="nv"&gt;db&lt;/span&gt;
+            &lt;span class="s"&gt;&amp;quot;INSERT INTO users (githubid) VALUES (&amp;#39;dialelo&amp;#39;);&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="c1"&gt;;; =&amp;gt; 1&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;And now we can fetch users from the DB:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;sc/fetch-one&lt;/span&gt; &lt;span class="nv"&gt;db&lt;/span&gt;
+              &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;SELECT * from users where id = ?&amp;quot;&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+&lt;span class="c1"&gt;;; =&amp;gt; {:id 1, :githubid &amp;quot;dialelo&amp;quot;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;We now have a way to fetch a user given its id, which is very nice, but it will return &lt;code&gt;nil&lt;/code&gt; if the user is not
+found thus limiting its composability. Also, the query is executed synchronously, and we may want to perform it
+in a separate thread.&lt;/p&gt;
+&lt;p&gt;Let's define a data source for the users of our database. When the user is not found, it will return a rejected
+promise and if its found it will simply resolve the promise with the user data:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;require&lt;/span&gt; &lt;span class="o"&gt;&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;promesa.core&lt;/span&gt; &lt;span class="ss"&gt;:as&lt;/span&gt; &lt;span class="nv"&gt;prom&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;require&lt;/span&gt; &lt;span class="o"&gt;&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;urania.core&lt;/span&gt; &lt;span class="ss"&gt;:as&lt;/span&gt; &lt;span class="nv"&gt;u&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;defn &lt;/span&gt;&lt;span class="nv"&gt;print!&lt;/span&gt;
+  &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;thing&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;print &lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;str &lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;pr-str &lt;/span&gt;&lt;span class="nv"&gt;thing&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="sc"&gt;\n&lt;/span&gt;&lt;span class="nv"&gt;ewline&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt;
+
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;deftype &lt;/span&gt;&lt;span class="nv"&gt;User&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;id&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+  &lt;span class="nv"&gt;u/DataSource&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;-identity&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;_&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="nv"&gt;id&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;-fetch&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;_&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:keys&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;db&lt;/span&gt;&lt;span class="p"&gt;]}]&lt;/span&gt;
+    &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;print!&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="ss"&gt;:-&amp;gt;user&lt;/span&gt; &lt;span class="nv"&gt;id&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+    &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;prom/promise&lt;/span&gt;
+      &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;fn &lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nb"&gt;resolve &lt;/span&gt;&lt;span class="nv"&gt;reject&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+        &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;if-let &lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;usr&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;sc/fetch-one&lt;/span&gt; &lt;span class="nv"&gt;db&lt;/span&gt;
+                                 &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;SELECT * from users where id = ?&amp;quot;&lt;/span&gt; &lt;span class="nv"&gt;id&lt;/span&gt;&lt;span class="p"&gt;])]&lt;/span&gt;
+         &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;do&lt;/span&gt;
+           &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;print!&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="ss"&gt;:&amp;lt;-user&lt;/span&gt; &lt;span class="nv"&gt;usr&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+           &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;resolve &lt;/span&gt;&lt;span class="nv"&gt;usr&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+         &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;reject&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;ex-info&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;User not found&amp;quot;&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:id&lt;/span&gt; &lt;span class="nv"&gt;id&lt;/span&gt;&lt;span class="p"&gt;})))))))&lt;/span&gt;
+
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;defn &lt;/span&gt;&lt;span class="nv"&gt;user&lt;/span&gt;
+  &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;id&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;User.&lt;/span&gt; &lt;span class="nv"&gt;id&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Now, we can ask for users given their id. Notice how we inject the db connection when running a fetch:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;u/run!!&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;user&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:env&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:db&lt;/span&gt; &lt;span class="nv"&gt;db&lt;/span&gt;&lt;span class="p"&gt;}})&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;user 1]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-user {:id 1, :githubid dialelo}]&lt;/span&gt;
+&lt;span class="c1"&gt;;; =&amp;gt; {:id 1, :githubid &amp;quot;dialelo&amp;quot;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;If we try to fetch a user that doesn't exist, we get back a rejected promise. Lets take a look:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;def &lt;/span&gt;&lt;span class="nv"&gt;fetch&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;u/run!&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;user&lt;/span&gt; &lt;span class="mi"&gt;99&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:env&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:db&lt;/span&gt; &lt;span class="nv"&gt;db&lt;/span&gt;&lt;span class="p"&gt;}}))&lt;/span&gt;
+
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;deref&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;prom/catch&lt;/span&gt; &lt;span class="nv"&gt;fetch&lt;/span&gt;
+              &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;fn &lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;err&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+                &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:msg&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;.getMessage&lt;/span&gt; &lt;span class="nv"&gt;err&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+                 &lt;span class="ss"&gt;:data&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;ex-data&lt;/span&gt; &lt;span class="nv"&gt;err&lt;/span&gt;&lt;span class="p"&gt;)})))&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;user 99]&lt;/span&gt;
+&lt;span class="c1"&gt;;; =&amp;gt; {:msg &amp;quot;User not found&amp;quot;, :data {:id 99}}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;In the above example, we use promesa's &lt;code&gt;catch&lt;/code&gt; combinator to transform an exception thrown inside a rejected promise
+to a resolved promise which contains a data strutcture with information about the error.&lt;/p&gt;
+&lt;p&gt;We can ask the first question about our users: given a user id, give me its GitHub username.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;defn &lt;/span&gt;&lt;span class="nv"&gt;github-username-by-id&lt;/span&gt;
+  &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;id&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;u/map&lt;/span&gt; &lt;span class="ss"&gt;:githubid&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;user&lt;/span&gt; &lt;span class="nv"&gt;id&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt;
+
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;u/run!!&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;github-username-by-id&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:env&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:db&lt;/span&gt; &lt;span class="nv"&gt;db&lt;/span&gt;&lt;span class="p"&gt;}})&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;user 1]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-user {:id 1, :githubid dialelo}]&lt;/span&gt;
+&lt;span class="c1"&gt;;; =&amp;gt; &amp;quot;dialelo&amp;quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;We can now fetch our users but we want to ask questions about their GitHub activity so we'll need a way to fetch GitHub
+user information. For that we use GitHub's API, you'll need a GitHub OAuth token for running these examples. We'll use
+the &lt;a href="https://github.com/funcool/httpurr"&gt;httpurr&lt;/a&gt; Clojure(Script) HTTP client to communicate with GitHub. First of all, let's define the headers we are going to
+use and the response parsing code:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;require&lt;/span&gt; &lt;span class="o"&gt;&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;clojure.data.json&lt;/span&gt; &lt;span class="ss"&gt;:as&lt;/span&gt; &lt;span class="nv"&gt;json&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;def &lt;/span&gt;&lt;span class="nv"&gt;github-token&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;bring-your-own-token&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;def &lt;/span&gt;&lt;span class="nv"&gt;github-headers&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;User-Agent&amp;quot;&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;httpurr&amp;quot;&lt;/span&gt;
+                     &lt;span class="s"&gt;&amp;quot;Content-Type&amp;quot;&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;application/json&amp;quot;&lt;/span&gt;
+                     &lt;span class="s"&gt;&amp;quot;Authorization&amp;quot;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;str &lt;/span&gt;&lt;span class="s"&gt;&amp;quot;token &amp;quot;&lt;/span&gt; &lt;span class="nv"&gt;github-token&lt;/span&gt;&lt;span class="p"&gt;)})&lt;/span&gt;
+
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;defn &lt;/span&gt;&lt;span class="nv"&gt;parse-response&lt;/span&gt;
+  &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;response&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;-&amp;gt; &lt;/span&gt;&lt;span class="nv"&gt;response&lt;/span&gt;
+    &lt;span class="ss"&gt;:body&lt;/span&gt;
+    &lt;span class="nv"&gt;slurp&lt;/span&gt;
+   &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;json/read-str&lt;/span&gt; &lt;span class="ss"&gt;:key-fn&lt;/span&gt; &lt;span class="nv"&gt;keyword&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Now we're able to define a data source for github users:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;require&lt;/span&gt; &lt;span class="o"&gt;&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;httpurr.client&lt;/span&gt; &lt;span class="ss"&gt;:as&lt;/span&gt; &lt;span class="nv"&gt;http&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;defn &lt;/span&gt;&lt;span class="nv"&gt;github-user-url&lt;/span&gt;
+  &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;username&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;str &lt;/span&gt;&lt;span class="s"&gt;&amp;quot;https://api.github.com/users/&amp;quot;&lt;/span&gt; &lt;span class="nv"&gt;username&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;deftype &lt;/span&gt;&lt;span class="nv"&gt;GitHubUser&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;username&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+  &lt;span class="nv"&gt;u/DataSource&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;-identity&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;_&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="nv"&gt;username&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;-fetch&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;_&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:keys&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;http&lt;/span&gt;&lt;span class="p"&gt;]}]&lt;/span&gt;
+    &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;print!&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="ss"&gt;:-&amp;gt;github-user&lt;/span&gt; &lt;span class="nv"&gt;username&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+    &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;let &lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;req&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;http/send!&lt;/span&gt; &lt;span class="nv"&gt;http&lt;/span&gt;
+                          &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:method&lt;/span&gt; &lt;span class="ss"&gt;:get&lt;/span&gt;
+                           &lt;span class="ss"&gt;:url&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;github-user-url&lt;/span&gt; &lt;span class="nv"&gt;username&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+                           &lt;span class="ss"&gt;:headers&lt;/span&gt; &lt;span class="nv"&gt;github-headers&lt;/span&gt;&lt;span class="p"&gt;})]&lt;/span&gt;
+       &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;prom/then&lt;/span&gt; &lt;span class="nv"&gt;req&lt;/span&gt; &lt;span class="o"&gt;#&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;do&lt;/span&gt;
+                         &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;print!&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="ss"&gt;:&amp;lt;-github-user&lt;/span&gt; &lt;span class="nv"&gt;username&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+                         &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;parse-response&lt;/span&gt; &lt;span class="nv"&gt;%&lt;/span&gt;&lt;span class="p"&gt;))))))&lt;/span&gt;
+
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;defn &lt;/span&gt;&lt;span class="nv"&gt;github-user&lt;/span&gt;
+  &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;username&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;GitHubUser.&lt;/span&gt; &lt;span class="nv"&gt;username&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Now that we have two data sources we can start asking more interesting questions about our data, let's give it a spin. We'll
+start with a simple query: given a user ID from our database, give me its GitHub user information. Note how we build this
+query on top of a previous one: &lt;code&gt;github-username-by-id&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;require&lt;/span&gt; &lt;span class="o"&gt;&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;httpurr.client.aleph&lt;/span&gt; &lt;span class="ss"&gt;:refer&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;client&lt;/span&gt;&lt;span class="p"&gt;]])&lt;/span&gt;
+
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;defn &lt;/span&gt;&lt;span class="nv"&gt;github-user-by-id&lt;/span&gt;
+  &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;id&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;u/mapcat&lt;/span&gt; &lt;span class="nv"&gt;github-user&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;github-username-by-id&lt;/span&gt; &lt;span class="nv"&gt;id&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt;
+
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;u/run!!&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;github-user-by-id&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:env&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:db&lt;/span&gt; &lt;span class="nv"&gt;db&lt;/span&gt;, &lt;span class="ss"&gt;:http&lt;/span&gt; &lt;span class="nv"&gt;client&lt;/span&gt;&lt;span class="p"&gt;}})&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;user 1]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-user {:id 1, :githubid dialelo}]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;github-user dialelo]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-github-user dialelo]&lt;/span&gt;
+&lt;span class="c1"&gt;;; =&amp;gt; {:html_url &amp;quot;https://github.com/dialelo&amp;quot;, :disk_usage 604079, ... }&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Since our &lt;code&gt;github-user&lt;/code&gt; returns a fetch to perform we have used &lt;code&gt;urania.core/mapcat&lt;/code&gt; instead of &lt;code&gt;urania.core/map&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;We can now start asking questions about the GitHub account of our users, for example how many followers they have:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;defn &lt;/span&gt;&lt;span class="nv"&gt;github-follower-count-by-id&lt;/span&gt;
+  &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;id&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;u/map&lt;/span&gt; &lt;span class="ss"&gt;:followers&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;github-user-by-id&lt;/span&gt; &lt;span class="nv"&gt;id&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt;
+
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;u/run!!&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;github-follower-count-by-id&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:env&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:db&lt;/span&gt; &lt;span class="nv"&gt;db&lt;/span&gt;, &lt;span class="ss"&gt;:http&lt;/span&gt; &lt;span class="nv"&gt;client&lt;/span&gt;&lt;span class="p"&gt;}})&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;user 1]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-user {:id 1, :githubid dialelo}]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;github-user dialelo]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-github-user dialelo]&lt;/span&gt;
+&lt;span class="c1"&gt;;; =&amp;gt; 186&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Or we can even merge the data from our database with the account info on GitHub.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;defn &lt;/span&gt;&lt;span class="nv"&gt;db-and-github-user&lt;/span&gt;
+  &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;id&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;u/map&lt;/span&gt; &lt;span class="o"&gt;#&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;merge &lt;/span&gt;&lt;span class="nv"&gt;%1&lt;/span&gt; &lt;span class="nv"&gt;%2&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+         &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;user&lt;/span&gt; &lt;span class="nv"&gt;id&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+         &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;github-user-by-id&lt;/span&gt; &lt;span class="nv"&gt;id&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt;
+
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;u/run!!&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;db-and-github-user&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:env&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:db&lt;/span&gt; &lt;span class="nv"&gt;db&lt;/span&gt;, &lt;span class="ss"&gt;:http&lt;/span&gt; &lt;span class="nv"&gt;client&lt;/span&gt;&lt;span class="p"&gt;}})&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;user 1]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-user {:id 1, :githubid dialelo}]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;github-user dialelo]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-github-user dialelo]&lt;/span&gt;
+&lt;span class="c1"&gt;;; =&amp;gt; {:html_url &amp;quot;https://github.com/dialelo&amp;quot;, :githubid &amp;quot;dialelo&amp;quot;, ... }&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Notice that we call &lt;code&gt;(user id)&lt;/code&gt; both in &lt;code&gt;db-and-github-user&lt;/code&gt; function's body and inside &lt;code&gt;github-user-by-id&lt;/code&gt; but is
+only fetched once. This deduplication that urania does for you alows you to write code like the remote data is residing
+in memory.&lt;/p&gt;
+&lt;p&gt;Now that we are going to ask questions about the organization a user belongs to, so we need to define another data source
+for fetching a user's organizations:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;def &lt;/span&gt;&lt;span class="nv"&gt;github-user-orgs-url&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;https://api.github.com/user/orgs&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;deftype &lt;/span&gt;&lt;span class="nv"&gt;UserOrgs&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;username&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+  &lt;span class="nv"&gt;u/DataSource&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;-identity&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;_&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="nv"&gt;username&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;-fetch&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;_&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:keys&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;http&lt;/span&gt;&lt;span class="p"&gt;]}]&lt;/span&gt;
+    &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;print!&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="ss"&gt;:-&amp;gt;github-user-orgs&lt;/span&gt; &lt;span class="nv"&gt;username&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+    &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;let &lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;req&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;http/send!&lt;/span&gt; &lt;span class="nv"&gt;http&lt;/span&gt;
+                          &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:method&lt;/span&gt; &lt;span class="ss"&gt;:get&lt;/span&gt;
+                           &lt;span class="ss"&gt;:url&lt;/span&gt; &lt;span class="nv"&gt;github-user-orgs-url&lt;/span&gt;
+                           &lt;span class="ss"&gt;:headers&lt;/span&gt; &lt;span class="nv"&gt;github-headers&lt;/span&gt;&lt;span class="p"&gt;})]&lt;/span&gt;
+      &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;prom/then&lt;/span&gt; &lt;span class="nv"&gt;req&lt;/span&gt; &lt;span class="o"&gt;#&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;do&lt;/span&gt;
+                       &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;print!&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="ss"&gt;:&amp;lt;-github-user-orgs&lt;/span&gt; &lt;span class="nv"&gt;username&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+                       &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;parse-response&lt;/span&gt; &lt;span class="nv"&gt;%&lt;/span&gt;&lt;span class="p"&gt;))))))&lt;/span&gt;
+
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;defn &lt;/span&gt;&lt;span class="nv"&gt;github-user-orgs&lt;/span&gt;
+  &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;username&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;UserOrgs.&lt;/span&gt; &lt;span class="nv"&gt;username&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Let's ask for the organizations of a certain user now:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;defn &lt;/span&gt;&lt;span class="nv"&gt;github-orgs-by-user-id&lt;/span&gt;
+  &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;id&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;u/mapcat&lt;/span&gt; &lt;span class="nv"&gt;github-user-orgs&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;github-username-by-id&lt;/span&gt; &lt;span class="nv"&gt;id&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt;
+
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;u/run!!&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;u/map&lt;/span&gt; &lt;span class="nb"&gt;count &lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;github-orgs-by-user-id&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+         &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:env&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:db&lt;/span&gt; &lt;span class="nv"&gt;db&lt;/span&gt;, &lt;span class="ss"&gt;:http&lt;/span&gt; &lt;span class="nv"&gt;client&lt;/span&gt;&lt;span class="p"&gt;}})&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;user 1]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-user {:id 1, :githubid dialelo}]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;github-user-orgs dialelo]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-github-user-orgs dialelo]&lt;/span&gt;
+&lt;span class="c1"&gt;;; =&amp;gt; 14&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Or augment a GitHub user's data with their organizations:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;defn &lt;/span&gt;&lt;span class="nv"&gt;github-user-with-orgs-by-id&lt;/span&gt;
+  &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;id&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;u/map&lt;/span&gt; &lt;span class="o"&gt;#&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;assoc &lt;/span&gt;&lt;span class="nv"&gt;%1&lt;/span&gt; &lt;span class="ss"&gt;:orgs&lt;/span&gt; &lt;span class="nv"&gt;%2&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+         &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;github-user-by-id&lt;/span&gt; &lt;span class="nv"&gt;id&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+         &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;github-orgs-by-user-id&lt;/span&gt; &lt;span class="nv"&gt;id&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt;
+
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;u/run!!&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;github-user-with-orgs-by-id&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+         &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:env&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:db&lt;/span&gt; &lt;span class="nv"&gt;db&lt;/span&gt;, &lt;span class="ss"&gt;:http&lt;/span&gt; &lt;span class="nv"&gt;client&lt;/span&gt;&lt;span class="p"&gt;}})&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-user {:id 1, :githubid &amp;quot;dialelo&amp;quot;}]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;github-user &amp;quot;dialelo&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;github-user-orgs &amp;quot;dialelo&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-github-user &amp;quot;dialelo&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-github-user-orgs &amp;quot;dialelo&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; =&amp;gt; {:html_url &amp;quot;https://github.com/dialelo&amp;quot;, :disk_usage 604079 ... }&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Notice how both the GitHub user and its organizations are fetched concurrently.&lt;/p&gt;
+&lt;p&gt;In the age of microservices, many utility function have been refactored to microservices. It's the case of our Uppercase
+microservice, which takes a word and returns it uppercased. In the first iteration of our uppercase microservice it is
+only available to uppercase one word at a time, let's define a data source for it:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;defrecord &lt;/span&gt;&lt;span class="nv"&gt;Uppercase&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;string&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+  &lt;span class="nv"&gt;u/DataSource&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;-identity&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;_&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="nv"&gt;string&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;-fetch&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;_&lt;/span&gt; &lt;span class="nv"&gt;_&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+    &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;print!&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="ss"&gt;:-&amp;gt;uppercase-string&lt;/span&gt; &lt;span class="nv"&gt;string&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+    &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;let &lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;uppercased&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;.toUpperCase&lt;/span&gt; &lt;span class="nv"&gt;string&lt;/span&gt;&lt;span class="p"&gt;)]&lt;/span&gt;
+      &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;print!&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="ss"&gt;:&amp;lt;-uppercase-string&lt;/span&gt; &lt;span class="nv"&gt;uppercased&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+      &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;prom/resolved&lt;/span&gt; &lt;span class="nv"&gt;uppercased&lt;/span&gt;&lt;span class="p"&gt;))))&lt;/span&gt;
+
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;defn &lt;/span&gt;&lt;span class="nv"&gt;uppercase&lt;/span&gt;
+  &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;str&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;Uppercase.&lt;/span&gt; &lt;span class="nv"&gt;str&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;We now want to know the uppercased name of every GitHub organization a user belongs to, so let's write that query:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;defn &lt;/span&gt;&lt;span class="nv"&gt;uppercased-github-org-names&lt;/span&gt;
+  &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;id&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;u/traverse&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;fn &lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;org&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+                &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;uppercase&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:login&lt;/span&gt; &lt;span class="nv"&gt;org&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt;
+              &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;github-orgs-by-user-id&lt;/span&gt; &lt;span class="nv"&gt;id&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt;
+
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;u/run!!&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;uppercased-github-org-names&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+         &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:env&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:db&lt;/span&gt; &lt;span class="nv"&gt;db&lt;/span&gt;, &lt;span class="ss"&gt;:http&lt;/span&gt; &lt;span class="nv"&gt;client&lt;/span&gt;&lt;span class="p"&gt;}})&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;user 1]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-user {:id 1, :githubid &amp;quot;dialelo&amp;quot;}]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;github-user-orgs &amp;quot;dialelo&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-github-user-orgs &amp;quot;dialelo&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;uppercase-string &amp;quot;kaleidos&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;uppercase-string &amp;quot;Front-Guerrilla&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-uppercase-string &amp;quot;FRONT-GUERRILLA&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-uppercase-string &amp;quot;KALEIDOS&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;uppercase-string &amp;quot;wikimaps&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;uppercase-string &amp;quot;uxbox&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;uppercase-string &amp;quot;47deg&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-uppercase-string &amp;quot;UXBOX&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-uppercase-string &amp;quot;47DEG&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;uppercase-string &amp;quot;sloth&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-uppercase-string &amp;quot;WIKIMAPS&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-uppercase-string &amp;quot;SLOTH&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;uppercase-string &amp;quot;thefinalcountapp&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;uppercase-string &amp;quot;taigaio&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;uppercase-string &amp;quot;mammutdb&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-uppercase-string &amp;quot;TAIGAIO&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-uppercase-string &amp;quot;THEFINALCOUNTAPP&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;uppercase-string &amp;quot;funcool&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;uppercase-string &amp;quot;Emacs-Madrid&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-uppercase-string &amp;quot;FUNCOOL&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-uppercase-string &amp;quot;EMACS-MADRID&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;uppercase-string &amp;quot;clojurecup2014&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;uppercase-string &amp;quot;opensourcedesign&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-uppercase-string &amp;quot;CLOJURECUP2014&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-uppercase-string &amp;quot;OPENSOURCEDESIGN&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;uppercase-string &amp;quot;PIWEEK&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-uppercase-string &amp;quot;PIWEEK&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-uppercase-string &amp;quot;MAMMUTDB&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; =&amp;gt; [&amp;quot;47DEG&amp;quot; &amp;quot;KALEIDOS&amp;quot; &amp;quot;WIKIMAPS&amp;quot; &amp;quot;OPENSOURCEDESIGN&amp;quot; &amp;quot;PIWEEK&amp;quot; &amp;quot;FRONT-GUERRILLA&amp;quot; &amp;quot;EMACS-MADRID&amp;quot; &amp;quot;TAIGAIO&amp;quot; &amp;quot;MAMMUTDB&amp;quot; &amp;quot;CLOJURECUP2014&amp;quot; &amp;quot;THEFINALCOUNTAPP&amp;quot; &amp;quot;FUNCOOL&amp;quot; &amp;quot;SLOTH&amp;quot; &amp;quot;UXBOX&amp;quot;]&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Whoa, that's a lot of requests to our uppercase microservice. Since we are having problems scaling it we have implemented
+a batch API, we can now uppercase words in batches! We update our data source to take advantage of the batch API:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;extend-type&lt;/span&gt; &lt;span class="nv"&gt;Uppercase&lt;/span&gt;
+  &lt;span class="nv"&gt;u/BatchedSource&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;-fetch-multi&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nb"&gt;up &lt;/span&gt;&lt;span class="nv"&gt;ups&lt;/span&gt; &lt;span class="nv"&gt;_&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+    &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;let &lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;all-strs&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;cons &lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:string&lt;/span&gt; &lt;span class="nv"&gt;up&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;map &lt;/span&gt;&lt;span class="ss"&gt;:string&lt;/span&gt; &lt;span class="nv"&gt;ups&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+          &lt;span class="nv"&gt;uppercased&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;mapv&lt;/span&gt; &lt;span class="o"&gt;#&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;.toUpperCase&lt;/span&gt; &lt;span class="nv"&gt;%&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="nv"&gt;all-strs&lt;/span&gt;&lt;span class="p"&gt;)]&lt;/span&gt;
+      &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;print!&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="ss"&gt;:-&amp;gt;uppercase-strings&lt;/span&gt; &lt;span class="nv"&gt;all-strs&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+      &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;print!&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="ss"&gt;:&amp;lt;-uppercase-strings&lt;/span&gt; &lt;span class="nv"&gt;uppercased&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+      &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;prom/resolved&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;zipmap &lt;/span&gt;&lt;span class="nv"&gt;all-strs&lt;/span&gt; &lt;span class="nv"&gt;uppercased&lt;/span&gt;&lt;span class="p"&gt;)))))&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;And notice how re-runing the query takes advantage of the batch API:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;u/run!!&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;uppercased-github-org-names&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+         &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:env&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="ss"&gt;:db&lt;/span&gt; &lt;span class="nv"&gt;db&lt;/span&gt;, &lt;span class="ss"&gt;:http&lt;/span&gt; &lt;span class="nv"&gt;client&lt;/span&gt;&lt;span class="p"&gt;}})&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;user 1]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-user {:id 1, :githubid &amp;quot;dialelo&amp;quot;}]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;github-user-orgs &amp;quot;dialelo&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-github-user-orgs &amp;quot;dialelo&amp;quot;]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:-&amp;gt;uppercase-strings (&amp;quot;kaleidos&amp;quot; &amp;quot;Front-Guerrilla&amp;quot; &amp;quot;wikimaps&amp;quot; &amp;quot;uxbox&amp;quot; &amp;quot;47deg&amp;quot; &amp;quot;sloth&amp;quot; &amp;quot;thefinalcountapp&amp;quot; &amp;quot;mammutdb&amp;quot; &amp;quot;taigaio&amp;quot; &amp;quot;funcool&amp;quot; &amp;quot;Emacs-Madrid&amp;quot; &amp;quot;clojurecup2014&amp;quot; &amp;quot;opensourcedesign&amp;quot; &amp;quot;PIWEEK&amp;quot;)]&lt;/span&gt;
+&lt;span class="c1"&gt;;; [:&amp;lt;-uppercase-strings [&amp;quot;KALEIDOS&amp;quot; &amp;quot;FRONT-GUERRILLA&amp;quot; &amp;quot;WIKIMAPS&amp;quot; &amp;quot;UXBOX&amp;quot; &amp;quot;47DEG&amp;quot; &amp;quot;SLOTH&amp;quot; &amp;quot;THEFINALCOUNTAPP&amp;quot; &amp;quot;MAMMUTDB&amp;quot; &amp;quot;TAIGAIO&amp;quot; &amp;quot;FUNCOOL&amp;quot; &amp;quot;EMACS-MADRID&amp;quot; &amp;quot;CLOJURECUP2014&amp;quot; &amp;quot;OPENSOURCEDESIGN&amp;quot; &amp;quot;PIWEEK&amp;quot;]]&lt;/span&gt;
+&lt;span class="c1"&gt;;; =&amp;gt; [&amp;quot;KALEIDOS&amp;quot; &amp;quot;FRONT-GUERRILLA&amp;quot; &amp;quot;WIKIMAPS&amp;quot; &amp;quot;UXBOX&amp;quot; &amp;quot;47DEG&amp;quot; &amp;quot;SLOTH&amp;quot; &amp;quot;THEFINALCOUNTAPP&amp;quot; &amp;quot;MAMMUTDB&amp;quot; &amp;quot;TAIGAIO&amp;quot; &amp;quot;FUNCOOL&amp;quot; &amp;quot;EMACS-MADRID&amp;quot; &amp;quot;CLOJURECUP2014&amp;quot; &amp;quot;OPENSOURCEDESIGN&amp;quot; &amp;quot;PIWEEK&amp;quot;]&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h2&gt;Conclusion&lt;/h2&gt;
+&lt;p&gt;Urania helps keep your business logic relying on remote data source elegant and composable, while executing it
+efficiently without you having to specify any coordination, deduplication or cahing. It can aggregate data from
+a variety of remote data sources, signal and recover from failures, and make your code elegant and efficient.&lt;/p&gt;</content><category term="blog"></category><category term="clojure"></category><category term="clojurescript"></category><category term="remote data"></category></entry></feed>

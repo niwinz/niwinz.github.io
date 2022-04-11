@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>niwi.nz : Show replication status in PostgreSQL</title>
+    <meta name=viewport content='width=200, initial-scale=1'>
+
+  <meta name="desciption" content="This is a small tip to view the replication status of slave postgresql servers. The simplest way to see the replication state on a master server is executing this query: select client_addr, state, sent_location, write_location, flush_location, replay_location from pg_stat_replication; This query can output can be like this: postgres=# select client_addr, state, sent_location postgres-# write_location, flush_location, replay_location, sync_priority from pg_stat_replication; client_addr |..." />
+    <meta name="author" content="Andrey Antukh" />
+
+    <link rel="stylesheet" href="https://www.niwi.nz/theme/css/main.css" />
+
+      <link href="https://www.niwi.nz/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="niwi.nz Atom Feed" />
+
+      <link href="https://www.niwi.nz/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="niwi.nz RSS Feed" />
+
+    <!--[if IE]>
+        <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!--[if lte IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie.css"/>
+        <script src="https://www.niwi.nz/js/IE8.js" type="text/javascript"></script>
+    <![endif]-->
+
+    <!--[if lt IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie6.css"/>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div id="wrap">
+      <div id="container">
+
+        <div class="entry">
+  <header>
+    <a href="https://www.niwi.nz"><small>(return to home)</small></a>
+    <h1>
+      <a href="https://www.niwi.nz/2013/02/16/replication-status-in-postgresql/" id="page-title">Show replication status in PostgreSQL</a>
+    </h1>
+    <div class="article-meta">
+        <small class="time">
+          Date:
+          <time datetime="2013-02-16T00:00:00+00:00">
+            Sat 16 February 2013
+          </time>
+        </small>
+      <br />
+      <small class="tags">
+        Tags:
+          <a href="https://www.niwi.nz/tag/postgresql.html">postgresql          </a>
+      </small>
+
+      <br />
+      <small class="tags">
+        Author:
+          <span>Andrey Antukh</span>      </small>
+    </div>
+  </header>
+  <article>
+    <div id="article-content">
+      <p>This is a small tip to view the replication status of slave postgresql servers. The simplest way
+to see the replication state on a master server is executing this query:</p>
+<div class="highlight"><pre><span></span><span class="k">select</span><span class="w"> </span><span class="n">client_addr</span><span class="p">,</span><span class="w"> </span><span class="k">state</span><span class="p">,</span><span class="w"> </span><span class="n">sent_location</span><span class="p">,</span><span class="w"> </span><span class="n">write_location</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">flush_location</span><span class="p">,</span><span class="w"> </span><span class="n">replay_location</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">pg_stat_replication</span><span class="p">;</span><span class="w"></span>
+</pre></div>
+<p>This query can output can be like this:</p>
+<div class="highlight"><pre><span></span><span class="gp">postgres=#</span><span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="n">client_addr</span><span class="p">,</span><span class="w"> </span><span class="n">state</span><span class="p">,</span><span class="w"> </span><span class="n">sent_location</span><span class="w"></span>
+<span class="gp">postgres-#</span><span class="w"> </span><span class="n">write_location</span><span class="p">,</span><span class="w"> </span><span class="n">flush_location</span><span class="p">,</span><span class="w"> </span><span class="n">replay_location</span><span class="p">,</span><span class="w"> </span><span class="n">sync_priority</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">pg_stat_replication</span><span class="p">;</span><span class="w"></span>
+<span class="go"> client_addr |   state   | write_location | flush_location | replay_location | sync_priority</span>
+<span class="go">-------------+-----------+----------------+----------------+-----------------+---------------</span>
+<span class="go"> 10.0.2.184  | streaming | AB/416D178     | AB/416D178     | AB/416D178      |             0</span>
+<span class="go">(1 row)</span>
+</pre></div>
+<p>If the slave is up in hot standby mode, you can tell the time in seconds the delay of transactions
+applied on the slave with this query:</p>
+<div class="highlight"><pre><span></span><span class="k">select</span><span class="w"> </span><span class="n">now</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">pg_last_xact_replay_timestamp</span><span class="p">()</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">replication_delay</span><span class="p">;</span><span class="w"></span>
+</pre></div>
+<p>This is a possible output:</p>
+<div class="highlight"><pre><span></span><span class="gp">postgres=#</span><span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="n">now</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">pg_last_xact_replay_timestamp</span><span class="p">()</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">replication_delay</span><span class="p">;</span><span class="w"></span>
+<span class="go"> replication_delay</span>
+<span class="go">-------------------</span>
+<span class="go"> 00:00:08.057668</span>
+<span class="go">(1 row)</span>
+</pre></div>
+<p>In a very busy database, with many writes per second, this number will remain fairly accurate.
+However, in a system where there are few writes, the &quot;replication_delay&quot; will continually grow
+because the last replayed transaction timestamp isn't increasing (this is generally the same
+limitation as MySQL's SHOW SLAVE STATUS output).</p>
+
+    </div>
+  </article>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

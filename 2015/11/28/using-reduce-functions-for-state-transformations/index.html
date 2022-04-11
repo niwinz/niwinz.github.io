@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>niwi.nz : Using reduce functions for state transformations</title>
+    <meta name=viewport content='width=200, initial-scale=1'>
+
+  <meta name="desciption" content="Most of the times I found clojurescript web applications mixing UI code with state transformation logic, that inherently tends to create a lot of coupling between them. I think that can be solved very easily using some kind of named events instead of direct state manipulation, being in server-client like architecture in a client only web application. And it can be approached using the clojure multimethods for define simple and extensible interface for state transformations. This can be the..." />
+    <meta name="author" content="Andrey Antukh" />
+
+    <link rel="stylesheet" href="https://www.niwi.nz/theme/css/main.css" />
+
+      <link href="https://www.niwi.nz/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="niwi.nz Atom Feed" />
+
+      <link href="https://www.niwi.nz/feeds/all.rss.xml" type="application/rss+xml" rel="alternate" title="niwi.nz RSS Feed" />
+
+    <!--[if IE]>
+        <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!--[if lte IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie.css"/>
+        <script src="https://www.niwi.nz/js/IE8.js" type="text/javascript"></script>
+    <![endif]-->
+
+    <!--[if lt IE 7]>
+        <link rel="stylesheet" type="text/css" media="all" href="https://www.niwi.nz/css/ie6.css"/>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div id="wrap">
+      <div id="container">
+
+        <div class="entry">
+  <header>
+    <a href="https://www.niwi.nz"><small>(return to home)</small></a>
+    <h1>
+      <a href="https://www.niwi.nz/2015/11/28/using-reduce-functions-for-state-transformations/" id="page-title">Using reduce functions for state transformations</a>
+    </h1>
+    <div class="article-meta">
+        <small class="time">
+          Date:
+          <time datetime="2015-11-28T00:00:00+00:00">
+            Sat 28 November 2015
+          </time>
+        </small>
+      <br />
+      <small class="tags">
+        Tags:
+          <a href="https://www.niwi.nz/tag/clojurescript.html">clojurescript,           </a>
+          <a href="https://www.niwi.nz/tag/state-management.html">state management,           </a>
+          <a href="https://www.niwi.nz/tag/state.html">state,           </a>
+          <a href="https://www.niwi.nz/tag/reactjs.html">reactjs,           </a>
+          <a href="https://www.niwi.nz/tag/multimethods.html">multimethods          </a>
+      </small>
+
+      <br />
+      <small class="tags">
+        Author:
+          <span>Andrey Antukh</span>      </small>
+    </div>
+  </header>
+  <article>
+    <div id="article-content">
+      <p>Most of the times I found clojurescript web applications mixing UI code with
+state transformation logic, that inherently tends to create a lot of coupling
+between them.</p>
+<p>I think that can be solved very easily using some kind of named events
+instead of direct state manipulation, being in server-client like architecture
+in a client only web application. And it can be approached using the clojure
+multimethods for define simple and extensible interface for state transformations.</p>
+<p>This can be the aspect of the multimethod declaration:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="kd">defmulti </span><span class="nv">state-transition</span>
+  <span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">state</span> <span class="p">[</span><span class="nv">event</span> <span class="nv">param</span><span class="p">]]</span> <span class="nv">event</span><span class="p">))</span>
+</code></pre></div>
+
+<p>The function receives a state as first argument and event object represented
+with a vector of two elements, first the event name and the second an optional
+parameters. That function can be used directly in <code>swap!</code>, that makes it
+really versatile.</p>
+<p>Imagine to have defined this state transformations:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="kd">defmethod </span><span class="nv">state-transition</span> <span class="ss">:index-users</span>
+  <span class="p">[</span><span class="nv">state</span> <span class="p">[</span><span class="nv">_</span> <span class="nv">users</span><span class="p">]]</span>
+  <span class="p">(</span><span class="nf">letfn</span> <span class="p">[(</span><span class="nf">index-counter</span> <span class="p">[</span><span class="nv">state</span> <span class="nv">item</span><span class="p">]</span>
+            <span class="p">(</span><span class="nf">assoc-in</span> <span class="nv">state</span> <span class="p">[</span><span class="ss">:users-by-id</span> <span class="p">(</span><span class="ss">:id</span> <span class="nv">item</span><span class="p">)]</span> <span class="nv">item</span><span class="p">))]</span>
+    <span class="p">(</span><span class="nb">reduce </span><span class="nv">index-counter</span> <span class="nv">state</span> <span class="nv">counters</span><span class="p">)))</span>
+
+<span class="p">(</span><span class="kd">defmethod </span><span class="nv">state-transition</span> <span class="ss">:set-users</span>
+  <span class="p">[</span><span class="nv">state</span> <span class="p">[</span><span class="nv">_</span> <span class="nv">users</span><span class="p">]]</span>
+  <span class="p">(</span><span class="nb">-&gt; </span><span class="p">(</span><span class="nb">assoc </span><span class="nv">state</span> <span class="ss">:users</span> <span class="p">(</span><span class="nf">mapv</span> <span class="ss">:id</span> <span class="nv">counters</span><span class="p">))</span>
+      <span class="p">(</span><span class="nf">state-transition</span> <span class="p">[</span><span class="ss">:index-counters</span> <span class="nv">counters</span><span class="p">])))</span>
+</code></pre></div>
+
+<p>You can use in this way:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="nf">swap!</span> <span class="nv">state</span> <span class="nv">state-transition</span> <span class="p">[</span><span class="ss">:set-users</span> <span class="nv">users</span><span class="p">])</span>
+</code></pre></div>
+
+<p>You can use it just as code to execute on event handlers of the react components
+or just on initialization of state.</p>
+<p>The state transitions also can be composed easily unsing <strong>-&gt;</strong> theading macro:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="kd">defn </span><span class="nv">populate-users</span>
+  <span class="p">[</span><span class="nv">state</span> <span class="nv">users</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">-&gt; </span><span class="nv">state</span>
+      <span class="p">(</span><span class="nf">state-transition</span> <span class="p">[</span><span class="ss">:set-users</span> <span class="nv">users</span><span class="p">])</span>
+      <span class="p">(</span><span class="nf">state-transition</span> <span class="p">[</span><span class="ss">:index-users</span> <span class="nv">users</span><span class="p">])))</span>
+</code></pre></div>
+
+<p>In fact, this is not a big revolutionary idea, is just a simple one that have
+worked in my case and that I hope you find it useful.</p>
+    </div>
+  </article>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>
