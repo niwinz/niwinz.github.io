@@ -10,7 +10,7 @@ until around the year 2030 ([Reference1](http://security.stackexchange.com/quest
 and [Reference2 pdf](http://csrc.nist.gov/publications/nistpubs/800-57/sp800-57_part1_rev3_general.pdf))
 
 ```bash
-openssl genrsa -out ~/niwi.be.key 2048
+openssl genrsa -out ~/niwi.nz.key 2048
 ```
 
 And the second step is create a proper csr (certificate request). I said proper because
@@ -21,15 +21,15 @@ case it should never be *sha1* ([Reference1](https://konklone.com/post/why-googl
 The recommended hash algorithm today is *sha256*:
 
 ```bash
-openssl req -new -sha256 -key ~/niwi.be.key -out ~/niwi.be.csr
+openssl req -new -sha256 -key ~/niwi.nz.key -out ~/niwi.nz.csr
 ```
 
 Here a little guide to different fields that you will found when creating the CSR:
 
-- *Common Name*: If you intend to secure the URL https://www.niwi.be, then your CSR's common name must be
-  `www.niwi.be`. If you plan on getting a wildcard certificate make sure to prefix your domain with an
-  asterisk, example: `*.niwi.be`.
-- *Organization*: The exact legal name of your organization. Example: `niwi.be`.
+- *Common Name*: If you intend to secure the URL https://www.niwi.nz, then your CSR's common name must be
+  `www.niwi.nz`. If you plan on getting a wildcard certificate make sure to prefix your domain with an
+  asterisk, example: `*.niwi.nz`.
+- *Organization*: The exact legal name of your organization. Example: `niwi.nz`.
 - *Organization unit*: The section of your organization. Example: `IT`.
 - *City or Locality*: The legal city of your organization. Example: `Madrid`.
 - *State or Provice*: The legal province of your organization. Example: `Madrid`.
@@ -38,7 +38,7 @@ Here a little guide to different fields that you will found when creating the CS
 And the last step, you may verify your csr:
 
 ```shell
-openssl req -noout -text -in ~/niwi.be.csr
+openssl req -noout -text -in ~/niwi.nz.csr
 ```
 
 This is a possible striped output with relevant information:
@@ -47,7 +47,7 @@ This is a possible striped output with relevant information:
 Certificate Request:
     Data:
         Version: 0 (0x0)
-        Subject: C=ES, ST=Madrid, L=Madrid, O=niwi.be, OU=IT, CN=*.niwi.be/emailAddress=niwi@niwi.be
+        Subject: C=ES, ST=Madrid, L=Madrid, O=niwi.nz, OU=IT, CN=*.niwi.nz/emailAddress=niwi@niwi.nz
         [...]
     Signature Algorithm: sha256WithRSAEncryption
         [...]
