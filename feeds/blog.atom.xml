@@ -775,52 +775,7 @@ simple entry point for properly rehash the password and store it again in the
 database.&lt;/p&gt;
 &lt;p&gt;In reality, this is a very small and insignificant feature, but it makes the things
 much easier for maintain the passwords of your application users updated with the
-stongest password hasher configuration.&lt;/p&gt;</content><category term="blog"></category><category term="clojure"></category><category term="security"></category><category term="auth"></category></entry><entry><title>Promises and ClojureScript</title><link href="https://niwi.nz/2015/03/28/promises-and-clojurescript/" rel="alternate"></link><published>2015-03-28T00:00:00+00:00</published><updated>2015-03-28T00:00:00+00:00</updated><author><name>Andrey Antukh</name></author><id>tag:niwi.nz,2015-03-28:/2015/03/28/promises-and-clojurescript/</id><summary type="html">&lt;p&gt;Updated: 2016-03-22&lt;/p&gt;
-&lt;p&gt;When I start developing in ClojureScript one year ago, &lt;em&gt;core.async&lt;/em&gt; was (
-and surelly continues to be) the most adopted library for work with
-asynchronous code.&lt;/p&gt;
-&lt;p&gt;It is not very bad approach because &lt;em&gt;core.async&lt;/em&gt; is a great library,
-but in my opion is not a good abstraction …&lt;/p&gt;</summary><content type="html">&lt;p&gt;Updated: 2016-03-22&lt;/p&gt;
-&lt;p&gt;When I start developing in ClojureScript one year ago, &lt;em&gt;core.async&lt;/em&gt; was (
-and surelly continues to be) the most adopted library for work with
-asynchronous code.&lt;/p&gt;
-&lt;p&gt;It is not very bad approach because &lt;em&gt;core.async&lt;/em&gt; is a great library,
-but in my opion is not a good abstraction for represent a result of async
-computation because it does not has builtin mechanism for handling
-errors.&lt;/p&gt;
-&lt;p&gt;Due to no existence of well established, documented and high performance
-promise library for clojurescript until today, I have written &lt;a href="https://github.com/funcool/promesa"&gt;promesa&lt;/a&gt;.&lt;/p&gt;
-&lt;p&gt;It uses the the powerful and high performant &lt;a href="https://github.com/petkaantonov/bluebird/"&gt;bluebird&lt;/a&gt; promise library
-as underlying implementation for ClojureScript and jdk8 completable futures
-as underlying impl. for Clojure.&lt;/p&gt;
-&lt;p&gt;This is a quick preview of the api&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;require&lt;/span&gt; &lt;span class="o"&gt;&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;promesa.core&lt;/span&gt; &lt;span class="ss"&gt;:as&lt;/span&gt; &lt;span class="nv"&gt;p&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
-
-&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;-&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;p/all&lt;/span&gt; &lt;span class="p"&gt;[(&lt;/span&gt;&lt;span class="nf"&gt;do-some-async-job&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-            &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;do-some-other-async-job&lt;/span&gt;&lt;span class="p"&gt;)])&lt;/span&gt;
-     &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;p/map&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;fn &lt;/span&gt;&lt;span class="p"&gt;[[&lt;/span&gt;&lt;span class="nv"&gt;result1&lt;/span&gt; &lt;span class="nv"&gt;result2&lt;/span&gt;&lt;span class="p"&gt;]]&lt;/span&gt;
-              &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;do-stuff&lt;/span&gt; &lt;span class="nv"&gt;result1&lt;/span&gt; &lt;span class="nv"&gt;result2&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt;
-     &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;p/err&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;fn &lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;error&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-              &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;do-something-with-error&lt;/span&gt; &lt;span class="nv"&gt;error&lt;/span&gt;&lt;span class="p"&gt;))))&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;Other of the amazing things that &lt;em&gt;promesa&lt;/em&gt; library exposes, is the ability
-to compose async computations that looks synchronous:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;defn &lt;/span&gt;&lt;span class="nv"&gt;do-stuff&lt;/span&gt;
-  &lt;span class="p"&gt;[]&lt;/span&gt;
-  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;p/alet&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;x&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;p/await&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;p/promise&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;   &lt;span class="c1"&gt;;; do async operation&lt;/span&gt;
-           &lt;span class="nv"&gt;_&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;p/await&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;p/delay&lt;/span&gt; &lt;span class="mi"&gt;1000&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;  &lt;span class="c1"&gt;;; emulate sleep&lt;/span&gt;
-           &lt;span class="nv"&gt;y&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;p/await&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;p/promise&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;))]&lt;/span&gt;  &lt;span class="c1"&gt;;; do an other async operation&lt;/span&gt;
-    &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;+ &lt;/span&gt;&lt;span class="nv"&gt;x&lt;/span&gt; &lt;span class="nv"&gt;y&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt;                          &lt;span class="c1"&gt;;; do the operation with results&lt;/span&gt;
-                                       &lt;span class="c1"&gt;;; of previous two async operations&lt;/span&gt;
-
-&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;p/map&lt;/span&gt; &lt;span class="o"&gt;#&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;println &lt;/span&gt;&lt;span class="nv"&gt;%&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;do-stuff&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;The result of &lt;code&gt;alet&lt;/code&gt; expression is an other promise that will be resolved with result
-of final operation or rejected in case of one of its operations is rejected.&lt;/p&gt;
-&lt;p&gt;This post only shows a little portion of the available api. If you want know more, the
-&lt;em&gt;promesa&lt;/em&gt; &lt;a href="http://funcool.github.io/promesa/latest/"&gt;documentation&lt;/a&gt; has a lot of examples.&lt;/p&gt;</content><category term="blog"></category><category term="clojure"></category><category term="clojurescript"></category></entry><entry><title>Generating a secure certificate request with OpenSSL</title><link href="https://niwi.nz/2015/03/25/generate-secure-certificate-request-with-openssl/" rel="alternate"></link><published>2015-03-25T00:00:00+00:00</published><updated>2015-03-25T00:00:00+00:00</updated><author><name>Andrey Antukh</name></author><id>tag:niwi.nz,2015-03-25:/2015/03/25/generate-secure-certificate-request-with-openssl/</id><summary type="html">&lt;p&gt;This is a little cheat sheet for personal use on how generate a secure certificate
+stongest password hasher configuration.&lt;/p&gt;</content><category term="blog"></category><category term="clojure"></category><category term="security"></category><category term="auth"></category></entry><entry><title>Generating a secure certificate request with OpenSSL</title><link href="https://niwi.nz/2015/03/25/generate-secure-certificate-request-with-openssl/" rel="alternate"></link><published>2015-03-25T00:00:00+00:00</published><updated>2015-03-25T00:00:00+00:00</updated><author><name>Andrey Antukh</name></author><id>tag:niwi.nz,2015-03-25:/2015/03/25/generate-secure-certificate-request-with-openssl/</id><summary type="html">&lt;p&gt;This is a little cheat sheet for personal use on how generate a secure certificate
 request using openssl.&lt;/p&gt;
 &lt;p&gt;The first step is creating a strong private key. At this moment the 2048bits is the recommended
 key lenght. Security experts are projecting that 2048 bits will be sufficient for commercial use …&lt;/p&gt;</summary><content type="html">&lt;p&gt;This is a little cheat sheet for personal use on how generate a secure certificate
@@ -829,7 +784,7 @@ request using openssl.&lt;/p&gt;
 key lenght. Security experts are projecting that 2048 bits will be sufficient for commercial use
 until around the year 2030 (&lt;a href="http://security.stackexchange.com/questions/65174/4096-bit-rsa-encryption-keys-vs-2048"&gt;Reference1&lt;/a&gt;
 and &lt;a href="http://csrc.nist.gov/publications/nistpubs/800-57/sp800-57_part1_rev3_general.pdf"&gt;Reference2 pdf&lt;/a&gt;)&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;openssl genrsa -out ~/niwi.be.key &lt;span class="m"&gt;2048&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;openssl genrsa -out ~/niwi.nz.key &lt;span class="m"&gt;2048&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 
 &lt;p&gt;And the second step is create a proper csr (certificate request). I said proper because
@@ -837,29 +792,29 @@ you should expliclitly specify the secure hash algorith to use for sign. In this
 case it should never be &lt;em&gt;sha1&lt;/em&gt; (&lt;a href="https://konklone.com/post/why-google-is-hurrying-the-web-to-kill-sha-1"&gt;Reference1&lt;/a&gt; and
 &lt;a href="https://shaaaaaaaaaaaaa.com/"&gt;Reference2&lt;/a&gt;)&lt;/p&gt;
 &lt;p&gt;The recommended hash algorithm today is &lt;em&gt;sha256&lt;/em&gt;:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;openssl req -new -sha256 -key ~/niwi.be.key -out ~/niwi.be.csr
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;openssl req -new -sha256 -key ~/niwi.nz.key -out ~/niwi.nz.csr
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 
 &lt;p&gt;Here a little guide to different fields that you will found when creating the CSR:&lt;/p&gt;
 &lt;ul&gt;
-&lt;li&gt;&lt;em&gt;Common Name&lt;/em&gt;: If you intend to secure the URL https://www.niwi.be, then your CSR's common name must be
-  &lt;code&gt;www.niwi.be&lt;/code&gt;. If you plan on getting a wildcard certificate make sure to prefix your domain with an
-  asterisk, example: &lt;code&gt;*.niwi.be&lt;/code&gt;.&lt;/li&gt;
-&lt;li&gt;&lt;em&gt;Organization&lt;/em&gt;: The exact legal name of your organization. Example: &lt;code&gt;niwi.be&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;Common Name&lt;/em&gt;: If you intend to secure the URL https://www.niwi.nz, then your CSR's common name must be
+  &lt;code&gt;www.niwi.nz&lt;/code&gt;. If you plan on getting a wildcard certificate make sure to prefix your domain with an
+  asterisk, example: &lt;code&gt;*.niwi.nz&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;Organization&lt;/em&gt;: The exact legal name of your organization. Example: &lt;code&gt;niwi.nz&lt;/code&gt;.&lt;/li&gt;
 &lt;li&gt;&lt;em&gt;Organization unit&lt;/em&gt;: The section of your organization. Example: &lt;code&gt;IT&lt;/code&gt;.&lt;/li&gt;
 &lt;li&gt;&lt;em&gt;City or Locality&lt;/em&gt;: The legal city of your organization. Example: &lt;code&gt;Madrid&lt;/code&gt;.&lt;/li&gt;
 &lt;li&gt;&lt;em&gt;State or Provice&lt;/em&gt;: The legal province of your organization. Example: &lt;code&gt;Madrid&lt;/code&gt;.&lt;/li&gt;
 &lt;li&gt;&lt;em&gt;Country&lt;/em&gt;: The legal country of your organizationin ISO format: &lt;code&gt;ES&lt;/code&gt;. (Full list &lt;a href="http://www.vas.com/Tnotes/Country%20Codes.htm"&gt;here&lt;/a&gt;)&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;And the last step, you may verify your csr:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;openssl req -noout -text -in ~/niwi.be.csr
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;openssl req -noout -text -in ~/niwi.nz.csr
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 
 &lt;p&gt;This is a possible striped output with relevant information:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;Certificate Request:
     Data:
         Version: 0 (0x0)
-        Subject: C=ES, ST=Madrid, L=Madrid, O=niwi.be, OU=IT, CN=*.niwi.be/emailAddress=niwi@niwi.be
+        Subject: C=ES, ST=Madrid, L=Madrid, O=niwi.nz, OU=IT, CN=*.niwi.nz/emailAddress=niwi@niwi.nz
         [...]
     Signature Algorithm: sha256WithRSAEncryption
         [...]
@@ -1088,248 +1043,7 @@ them.&lt;/p&gt;
 
 &lt;p&gt;Clojure offers very flexible polymorphic constructions that makes the code more expressive
 without additional accidental complexity. If protocols seems limited for you, let try use
-&lt;em&gt;multimethods&lt;/em&gt;.&lt;/p&gt;</content><category term="blog"></category><category term="clojure"></category></entry><entry><title>A little overview of error handling.</title><link href="https://niwi.nz/2015/03/08/error-handling/" rel="alternate"></link><published>2015-03-08T00:00:00+00:00</published><updated>2015-03-08T00:00:00+00:00</updated><author><name>Andrey Antukh</name></author><id>tag:niwi.nz,2015-03-08:/2015/03/08/error-handling/</id><summary type="html">&lt;p&gt;In this article, I'll try to make a little overview over different "modern" approaches
-for error handling and converge to one concrete, that in my opinion is the right way
-to do it.&lt;/p&gt;
-&lt;h2&gt;Exceptions&lt;/h2&gt;
-&lt;p&gt;What is an &lt;em&gt;exception&lt;/em&gt;? An exception is an event that occurs during the execution of a …&lt;/p&gt;</summary><content type="html">&lt;p&gt;In this article, I'll try to make a little overview over different "modern" approaches
-for error handling and converge to one concrete, that in my opinion is the right way
-to do it.&lt;/p&gt;
-&lt;h2&gt;Exceptions&lt;/h2&gt;
-&lt;p&gt;What is an &lt;em&gt;exception&lt;/em&gt;? An exception is an event that occurs during the execution of a
-program that disrupts the normal flow of instructions.&lt;/p&gt;
-&lt;p&gt;Is the most common and accepted way to handling errors in popular and most used languages
-today is using Exceptions. &lt;em&gt;Exceptions&lt;/em&gt; as is is not a bad thing and it has great uses
-cases. But in my opinion, the culture of languages that uses exceptions approach for
-error handling invites to use &lt;em&gt;exceptions&lt;/em&gt; as flow control structures or label ordinary
-and expected errors (such as failing open a file) as exceptional situations.&lt;/p&gt;
-&lt;p&gt;And if you look back, that approach is very similar to the hated &lt;em&gt;goto&lt;/em&gt;.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;read_report_file&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;owner&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="n"&gt;User&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;Report&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-    &lt;span class="k"&gt;try&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="n"&gt;path&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;join&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;REPORTS_DIR&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="n"&gt;file&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;io&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;open&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;rt&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;process_file_and_get_report&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;file&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;owner&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-
-    &lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="n"&gt;PermissionDeniend&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="n"&gt;send_notification_about_unauthorized_request&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;owner&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="k"&gt;raise&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;
-
-    &lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="n"&gt;FileNotFound&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="k"&gt;raise&lt;/span&gt; &lt;span class="n"&gt;ReportNotFound&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;Report file does not exists&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;e&lt;/span&gt;
-
-    &lt;span class="k"&gt;finally&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="n"&gt;file&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;close&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;Having this code snippet, you can observe:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;Using exceptions violates the "Single Responsibility Principle". By definition,
-  any function using a try/catch is doing more that one thing at time: domain
-  logic and error handling.&lt;/li&gt;
-&lt;li&gt;That approach also violates the open/closed principle. If you want extend error
-  handling, you should touch a function code that also has domain logic.&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;Obviously is my opinion, not every one has the same perception when error handling
-is mixed with domain logic.&lt;/p&gt;
-&lt;p&gt;Good literature about this:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a href="http://250bpm.com/blog:4"&gt;http://250bpm.com/blog:4&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href="http://stackoverflow.com/questions/1736146/why-is-exception-handling-bad"&gt;http://stackoverflow.com/questions/1736146/why-is-exception-handling-bad&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href="http://blogs.atlassian.com/2011/05/exceptions_are_bad/"&gt;http://blogs.atlassian.com/2011/05/exceptions_are_bad/&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2&gt;Null / Optional&lt;/h2&gt;
-&lt;p&gt;In multiple situations, return (from function or method) something that can represent
-"Nothing" is more that enough.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="n"&gt;SoundCard&lt;/span&gt; &lt;span class="n"&gt;soundCard&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;computer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getSoundCard&lt;/span&gt;&lt;span class="o"&gt;()&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;Having this code snippet in mind, we can see that &lt;code&gt;getSoundCard&lt;/code&gt; operation has two possible
-return values: sound card instance or some kind of "Nothing" (in case of a computer that doesn't
-have a sound card).&lt;/p&gt;
-&lt;p&gt;For this situations, different languages has different approaches. There are languages that
-uses a &lt;code&gt;NULL&lt;/code&gt; as value that represents "Nothing". Other languages has an special type commonly
-known as &lt;code&gt;Optional&amp;lt;T&amp;gt;&lt;/code&gt;, and others directly does not have &lt;code&gt;NULL&lt;/code&gt;.&lt;/p&gt;
-&lt;p&gt;Here an example using the classic approach using java:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="n"&gt;String&lt;/span&gt; &lt;span class="n"&gt;version&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;UNKNOWN&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
-&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;computer&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="kc"&gt;null&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
-    &lt;span class="n"&gt;Soundcard&lt;/span&gt; &lt;span class="n"&gt;soundcard&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;computer&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getSoundcard&lt;/span&gt;&lt;span class="p"&gt;();&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;soundcard&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="kc"&gt;null&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
-        &lt;span class="n"&gt;USB&lt;/span&gt; &lt;span class="n"&gt;usb&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;soundcard&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getUSB&lt;/span&gt;&lt;span class="p"&gt;();&lt;/span&gt;
-        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;usb&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="kc"&gt;null&lt;/span&gt;&lt;span class="p"&gt;){&lt;/span&gt;
-            &lt;span class="n"&gt;version&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;usb&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getVersion&lt;/span&gt;&lt;span class="p"&gt;();&lt;/span&gt;
-        &lt;span class="p"&gt;}&lt;/span&gt;
-    &lt;span class="p"&gt;}&lt;/span&gt;
-&lt;span class="p"&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;Is clearly an approach that not scales very well. The code is already looks ugly and if
-more steps will be added, the situation not will be improved.&lt;/p&gt;
-&lt;p&gt;Some languages offers sugar syntax for handling with &lt;code&gt;NULL&lt;/code&gt; pointers. Here the groovy
-approach for represent the same code but in more readable syntax:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="n"&gt;String&lt;/span&gt; &lt;span class="n"&gt;version&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;computer&lt;/span&gt;&lt;span class="o"&gt;?.&lt;/span&gt;&lt;span class="na"&gt;getSoundcard&lt;/span&gt;&lt;span class="o"&gt;()?.&lt;/span&gt;&lt;span class="na"&gt;getUSB&lt;/span&gt;&lt;span class="o"&gt;()?.&lt;/span&gt;&lt;span class="na"&gt;getVersion&lt;/span&gt;&lt;span class="o"&gt;();&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;And the same code using clojure:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;some-&amp;gt;&lt;/span&gt; &lt;span class="nv"&gt;computer&lt;/span&gt; &lt;span class="nv"&gt;get-sound-card&lt;/span&gt; &lt;span class="nv"&gt;get-usb&lt;/span&gt; &lt;span class="nv"&gt;get-version&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;Later, modern versions of languages start adding a special type for help handling that
-situations: &lt;code&gt;Optional&amp;lt;T&amp;gt;&lt;/code&gt;. Here, you can see the same example but implemented using
-the &lt;em&gt;java8 optional&lt;/em&gt; type as return value:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="n"&gt;String&lt;/span&gt; &lt;span class="n"&gt;version&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;computer&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="na"&gt;flatMap&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Computer&lt;/span&gt;&lt;span class="p"&gt;::&lt;/span&gt;&lt;span class="n"&gt;getSoundcard&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-                         &lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="na"&gt;flatMap&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Soundcard&lt;/span&gt;&lt;span class="p"&gt;::&lt;/span&gt;&lt;span class="n"&gt;getUSB&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-                         &lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="na"&gt;map&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;USB&lt;/span&gt;&lt;span class="p"&gt;::&lt;/span&gt;&lt;span class="n"&gt;getVersion&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-                         &lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="na"&gt;orElse&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;UNKNOWN&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;It is clearly an improvement, but in my opinion, using function names like &lt;code&gt;map&lt;/code&gt; or &lt;code&gt;flatMap&lt;/code&gt; for
-compositions like this, is not very semantic.&lt;/p&gt;
-&lt;p&gt;In summary:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;Null pointers are usually a source of much problems and should be avoided.&lt;/li&gt;
-&lt;li&gt;Some languages has a "safe" way for handling the null pointer, with specific
-  types or syntax abstractions.&lt;/li&gt;
-&lt;li&gt;Safe helpers must be used in case you are bound to use null pointers.&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2&gt;Errors as value&lt;/h2&gt;
-&lt;p&gt;Let start with a mixed way to handle errors. Mixed approach uses something like exceptions
-but instead of raising them, returns them as value.&lt;/p&gt;
-&lt;p&gt;This approach can be used in almost all languages, but some languages enforces the usage of
-this approach (golang as example). And this approach has problems from both previously explained
-approaches, and if a language does not have enough expressiveness, the code using this
-error handling approach tends to be tricky.&lt;/p&gt;
-&lt;p&gt;Imagine that functions from previous examples, now returns a something like a tuple or
-list with two values, the result and the error.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;get_soundcard_usb_version&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;computer&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-    &lt;span class="n"&gt;sound_card&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;err&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;get_sound_card&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;computer&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;err&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-       &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="kc"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;err&lt;/span&gt;
-    &lt;span class="n"&gt;usb&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;err&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;get_usb&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;sound_card&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;err&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-       &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="kc"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;err&lt;/span&gt;
-    &lt;span class="n"&gt;version&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;err&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;get_version&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;usb&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;err&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-       &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="kc"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;err&lt;/span&gt;
-    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;version&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kc"&gt;None&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;Like exceptions, this has mixed domain logic with constant and tedious error handling in the
-same function. Then, languages of lisp family allows create some syntactic sugar, that can convert this
-unexpressive code in something more expressive.&lt;/p&gt;
-&lt;p&gt;Here the code for make the syntactic abstraction in clojure:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;defn &lt;/span&gt;&lt;span class="nv"&gt;apply-or-error&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;f&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nb"&gt;val &lt;/span&gt;&lt;span class="nv"&gt;err&lt;/span&gt;&lt;span class="p"&gt;]]&lt;/span&gt;
-  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;if &lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;nil? &lt;/span&gt;&lt;span class="nv"&gt;err&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;f&lt;/span&gt; &lt;span class="nv"&gt;val&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;nil&lt;/span&gt; &lt;span class="nv"&gt;err&lt;/span&gt;&lt;span class="p"&gt;]))&lt;/span&gt;
-
-&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;defmacro &lt;/span&gt;&lt;span class="nv"&gt;err-&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nb"&gt;val &lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt; &lt;span class="nv"&gt;fns&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;let &lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;fns&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;for &lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;f&lt;/span&gt; &lt;span class="nv"&gt;fns&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;`&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;apply-or-error&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="nv"&gt;f&lt;/span&gt;&lt;span class="p"&gt;))]&lt;/span&gt;
-    &lt;span class="o"&gt;`&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;-&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="nb"&gt;val &lt;/span&gt;&lt;span class="nv"&gt;nil&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-          &lt;span class="o"&gt;~@&lt;/span&gt;&lt;span class="nv"&gt;fns&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;And here, the same example using above syntax sugar:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;defn &lt;/span&gt;&lt;span class="nv"&gt;get-soundcard-usb-version&lt;/span&gt;
-  &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;computer&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;err-&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="nv"&gt;computer&lt;/span&gt;
-          &lt;span class="nv"&gt;get-sound-card&lt;/span&gt;
-          &lt;span class="nv"&gt;get-usb&lt;/span&gt;
-          &lt;span class="nv"&gt;get-version&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;A little summary:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;If your language allows construct an expesive way to handle, this may be the most expressive one.&lt;/li&gt;
-&lt;li&gt;This approach not uses bad practices and not uses the goto.&lt;/li&gt;
-&lt;li&gt;Unexpressive languages like golang tends to be completely unnecessary more verbose.&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2&gt;Monads as error type&lt;/h2&gt;
-&lt;p&gt;Explaining monads I think that is completely out of scope of this article. For people that not known
-the monads and related thing, in our examples it looks to be an lightweight wrapper for return
-values or errors. The main difference with previous example, is that the error logic is found in
-the type and not in the separate ad-hoc functions.&lt;/p&gt;
-&lt;p&gt;That approach is the most common in functional languages and haskell encourages this approach. Imagine
-the previous examples, that instead of return a tuple of two values, returns a result wrapped in a
-some kind of wrapper.&lt;/p&gt;
-&lt;p&gt;In this case the wrapper is a Either monad that has two constructors: Left and Right. Where Left
-represents a failed operation, and Right represents a successful operation.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="nf"&gt;getSoundCardUsbVersion&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;computer&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="ow"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kr"&gt;do&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
-&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="n"&gt;soundCard&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="ow"&gt;&amp;lt;-&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;getSoundCard&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;computer&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
-&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="n"&gt;usb&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="ow"&gt;&amp;lt;-&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;getUsb&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;soundCard&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
-&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="n"&gt;version&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="ow"&gt;&amp;lt;-&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;getVersion&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;usb&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
-&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="n"&gt;return&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;version&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;This code that looks completely procedural, is completely functional and has short-circuiting
-mecanism if one of the operations fails (returning a error wrapped in a Left instance).&lt;/p&gt;
-&lt;p&gt;But how it really works? It is very very simple. In previous example we have used lisp macros
-for define an ad-hoc sugar syntax with ad-hoc error handling logic. In this case, the error handling
-logic is defined in the type what we are using as return value: &lt;code&gt;Either&lt;/code&gt;.&lt;/p&gt;
-&lt;p&gt;And the haskell do notation is a some kind of macro/sugar-syntax. The main difference with that
-sugar syntax and the lisp's above one, is that the do syntax is completely generic and works
-with any type that implements the Monad protocol/type.&lt;/p&gt;
-&lt;p&gt;In clojure, we also can use the monadic types for handle errors (
-&lt;a href="https://github.com/funcool/cats"&gt;cats&lt;/a&gt; library will be used in the following examples)&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;require&lt;/span&gt; &lt;span class="o"&gt;&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;cats.core&lt;/span&gt; &lt;span class="nv"&gt;as&lt;/span&gt; &lt;span class="nv"&gt;m&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
-
-&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;defn &lt;/span&gt;&lt;span class="nv"&gt;get-soundcard-usb-version&lt;/span&gt;
-  &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;computer&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;m/mlet&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;sound-card&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;get-sound-card&lt;/span&gt; &lt;span class="nv"&gt;computer&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-           &lt;span class="nv"&gt;usb&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;get-usb&lt;/span&gt; &lt;span class="nv"&gt;sound-card&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-           &lt;span class="nv"&gt;version&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;get-version&lt;/span&gt; &lt;span class="nv"&gt;usb&lt;/span&gt;&lt;span class="p"&gt;)]&lt;/span&gt;
-    &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;m/return&lt;/span&gt; &lt;span class="nv"&gt;version&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;That code, like the haskell one, short-circuits in case of one of operations returns a value
-that can be treat as failure case.&lt;/p&gt;
-&lt;p&gt;This approach in languages like clojure, that not uses monadic error handling as default approach
-may be slightly intrusive, because it obliges that all function used in mlet macro (clojure's do
-notation) return always an instance of monadic type (Left or Right in this case). And is more
-tedious if you are using third party libraries in your domain logic and that third party libraries
-uses exceptions.&lt;/p&gt;
-&lt;p&gt;For that cases exists the &lt;em&gt;exception monad&lt;/em&gt;, with little sugar syntax for wrap third party libraries
-in a monadic types (wrappers). Imagine that functions used in previous examples are coming
-from third party library and raises an exception in case of error.&lt;/p&gt;
-&lt;p&gt;This is the aspect of the previous example with new constrains:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;require&lt;/span&gt; &lt;span class="o"&gt;&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;cats.core&lt;/span&gt; &lt;span class="nv"&gt;as&lt;/span&gt; &lt;span class="nv"&gt;m&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
-&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;require&lt;/span&gt; &lt;span class="o"&gt;&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;cats.monad.exception&lt;/span&gt; &lt;span class="ss"&gt;:as&lt;/span&gt; &lt;span class="nv"&gt;exc&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
-
-&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;defn &lt;/span&gt;&lt;span class="nv"&gt;get-soundcard-usb-version&lt;/span&gt;
-  &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;computer&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;m/mlet&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;sound-card&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;exc/try-on&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;get-sound-card&lt;/span&gt; &lt;span class="nv"&gt;computer&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
-           &lt;span class="nv"&gt;usb&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;exc/try-on&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;get-usb&lt;/span&gt; &lt;span class="nv"&gt;sound-card&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
-           &lt;span class="nv"&gt;version&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;exc/try-on&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;get-version&lt;/span&gt; &lt;span class="nv"&gt;usb&lt;/span&gt;&lt;span class="p"&gt;))]&lt;/span&gt;
-    &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;m/return&lt;/span&gt; &lt;span class="nv"&gt;version&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;You can see, that in both examples (haskell and clojure) the error handling is completely out
-of domain logic.&lt;/p&gt;
-&lt;p&gt;More literature:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a href="http://adambard.com/blog/acceptable-error-handling-in-clojure/"&gt;http://adambard.com/blog/acceptable-error-handling-in-clojure/&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href="http://brehaut.net/blog/2011/error_monads"&gt;http://brehaut.net/blog/2011/error_monads&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href="http://yellerapp.com/posts/2014-06-27-api-error-handling.html"&gt;http://yellerapp.com/posts/2014-06-27-api-error-handling.html&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href="https://www.fpcomplete.com/school/starting-with-haskell/basics-of-haskell/10_Error_Handling"&gt;https://www.fpcomplete.com/school/starting-with-haskell/basics-of-haskell/10_Error_Handling&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href="http://www.lispcast.com/nil-punning"&gt;http://www.lispcast.com/nil-punning&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href="http://swannodette.github.io/2013/08/31/asynchronous-error-handling/"&gt;http://swannodette.github.io/2013/08/31/asynchronous-error-handling/&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href="http://tersesystems.com/2012/12/27/error-handling-in-scala/"&gt;http://tersesystems.com/2012/12/27/error-handling-in-scala/&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href="http://lucumr.pocoo.org/2014/10/16/on-error-handling/"&gt;http://lucumr.pocoo.org/2014/10/16/on-error-handling/&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href="http://mauricio.github.io/2014/02/17/scala-either-try-and-the-m-word.html"&gt;http://mauricio.github.io/2014/02/17/scala-either-try-and-the-m-word.html&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href="http://danielwestheide.com/blog/2012/12/26/the-neophytes-guide-to-scala-part-6-error-handling-with-try.html"&gt;http://danielwestheide.com/blog/2012/12/26/the-neophytes-guide-to-scala-part-6-error-handling-with-try.html&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href="http://java.dzone.com/articles/whats-wrong-java-8-part-iv"&gt;http://java.dzone.com/articles/whats-wrong-java-8-part-iv&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2&gt;Summary&lt;/h2&gt;
-&lt;p&gt;In my opinion, monads or something similar is a path for good and safe error handling that
-allows focus on domain logic and not mix it with constant and tedious error handling.&lt;/p&gt;
-&lt;p&gt;With that approach you can clearly split and isolate the error handling code from your
-domain logic.&lt;/p&gt;
-&lt;p&gt;This is my approach:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;Use Maybe to return optional values.&lt;/li&gt;
-&lt;li&gt;Use Either to report expected failure.&lt;/li&gt;
-&lt;li&gt;Use Try (Exception monad) for adapt third party libraries.&lt;/li&gt;
-&lt;li&gt;Throw Exception to signal unexpected failure in purely functional code.&lt;/li&gt;
-&lt;/ul&gt;</content><category term="blog"></category><category term="error"></category><category term="monad"></category><category term="clojure"></category></entry><entry><title>Multimethods with python3</title><link href="https://niwi.nz/2015/01/10/clojure-like-multimethods-in-python3/" rel="alternate"></link><published>2015-01-10T00:00:00+00:00</published><updated>2015-01-10T00:00:00+00:00</updated><author><name>Andrey Antukh</name></author><id>tag:niwi.nz,2015-01-10:/2015/01/10/clojure-like-multimethods-in-python3/</id><summary type="html">&lt;p&gt;After using clojure for some time on my hobby projects, I find clojure's multimethods
+&lt;em&gt;multimethods&lt;/em&gt;.&lt;/p&gt;</content><category term="blog"></category><category term="clojure"></category></entry><entry><title>Multimethods with python3</title><link href="https://niwi.nz/2015/01/10/clojure-like-multimethods-in-python3/" rel="alternate"></link><published>2015-01-10T00:00:00+00:00</published><updated>2015-01-10T00:00:00+00:00</updated><author><name>Andrey Antukh</name></author><id>tag:niwi.nz,2015-01-10:/2015/01/10/clojure-like-multimethods-in-python3/</id><summary type="html">&lt;p&gt;After using clojure for some time on my hobby projects, I find clojure's multimethods
 feature really exciting. In popular words, multimethods provides "polymorphism a la carte".&lt;/p&gt;
 &lt;p&gt;I thought it was funny to try implement that using python3. Amazingly, the result seems
 very expressive and maybe it is can be more …&lt;/p&gt;</summary><content type="html">&lt;p&gt;After using clojure for some time on my hobby projects, I find clojure's multimethods

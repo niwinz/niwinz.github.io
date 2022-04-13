@@ -5,7 +5,7 @@
     <title>niwi.nz : Generating a secure certificate request with OpenSSL</title>
     <meta name=viewport content='width=200, initial-scale=1'>
 
-  <meta name="desciption" content="This is a little cheat sheet for personal use on how generate a secure certificate request using openssl. The first step is creating a strong private key. At this moment the 2048bits is the recommended key lenght. Security experts are projecting that 2048 bits will be sufficient for commercial use until around the year 2030 (Reference1 and Reference2 pdf) openssl genrsa -out ~/niwi.be.key 2048 And the second step is create a proper csr (certificate request). I said proper because you should..." />
+  <meta name="desciption" content="This is a little cheat sheet for personal use on how generate a secure certificate request using openssl. The first step is creating a strong private key. At this moment the 2048bits is the recommended key lenght. Security experts are projecting that 2048 bits will be sufficient for commercial use until around the year 2030 (Reference1 and Reference2 pdf) openssl genrsa -out ~/niwi.nz.key 2048 And the second step is create a proper csr (certificate request). I said proper because you should..." />
     <meta name="author" content="Andrey Antukh" />
 
     <link rel="stylesheet" href="https://niwi.nz/theme/css/main.css" />
@@ -66,7 +66,7 @@ request using openssl.</p>
 key lenght. Security experts are projecting that 2048 bits will be sufficient for commercial use
 until around the year 2030 (<a href="http://security.stackexchange.com/questions/65174/4096-bit-rsa-encryption-keys-vs-2048">Reference1</a>
 and <a href="http://csrc.nist.gov/publications/nistpubs/800-57/sp800-57_part1_rev3_general.pdf">Reference2 pdf</a>)</p>
-<div class="highlight"><pre><span></span><code>openssl genrsa -out ~/niwi.be.key <span class="m">2048</span>
+<div class="highlight"><pre><span></span><code>openssl genrsa -out ~/niwi.nz.key <span class="m">2048</span>
 </code></pre></div>
 
 <p>And the second step is create a proper csr (certificate request). I said proper because
@@ -74,29 +74,29 @@ you should expliclitly specify the secure hash algorith to use for sign. In this
 case it should never be <em>sha1</em> (<a href="https://konklone.com/post/why-google-is-hurrying-the-web-to-kill-sha-1">Reference1</a> and
 <a href="https://shaaaaaaaaaaaaa.com/">Reference2</a>)</p>
 <p>The recommended hash algorithm today is <em>sha256</em>:</p>
-<div class="highlight"><pre><span></span><code>openssl req -new -sha256 -key ~/niwi.be.key -out ~/niwi.be.csr
+<div class="highlight"><pre><span></span><code>openssl req -new -sha256 -key ~/niwi.nz.key -out ~/niwi.nz.csr
 </code></pre></div>
 
 <p>Here a little guide to different fields that you will found when creating the CSR:</p>
 <ul>
-<li><em>Common Name</em>: If you intend to secure the URL https://www.niwi.be, then your CSR's common name must be
-  <code>www.niwi.be</code>. If you plan on getting a wildcard certificate make sure to prefix your domain with an
-  asterisk, example: <code>*.niwi.be</code>.</li>
-<li><em>Organization</em>: The exact legal name of your organization. Example: <code>niwi.be</code>.</li>
+<li><em>Common Name</em>: If you intend to secure the URL https://www.niwi.nz, then your CSR's common name must be
+  <code>www.niwi.nz</code>. If you plan on getting a wildcard certificate make sure to prefix your domain with an
+  asterisk, example: <code>*.niwi.nz</code>.</li>
+<li><em>Organization</em>: The exact legal name of your organization. Example: <code>niwi.nz</code>.</li>
 <li><em>Organization unit</em>: The section of your organization. Example: <code>IT</code>.</li>
 <li><em>City or Locality</em>: The legal city of your organization. Example: <code>Madrid</code>.</li>
 <li><em>State or Provice</em>: The legal province of your organization. Example: <code>Madrid</code>.</li>
 <li><em>Country</em>: The legal country of your organizationin ISO format: <code>ES</code>. (Full list <a href="http://www.vas.com/Tnotes/Country%20Codes.htm">here</a>)</li>
 </ul>
 <p>And the last step, you may verify your csr:</p>
-<div class="highlight"><pre><span></span><code>openssl req -noout -text -in ~/niwi.be.csr
+<div class="highlight"><pre><span></span><code>openssl req -noout -text -in ~/niwi.nz.csr
 </code></pre></div>
 
 <p>This is a possible striped output with relevant information:</p>
 <div class="highlight"><pre><span></span><code>Certificate Request:
     Data:
         Version: 0 (0x0)
-        Subject: C=ES, ST=Madrid, L=Madrid, O=niwi.be, OU=IT, CN=*.niwi.be/emailAddress=niwi@niwi.be
+        Subject: C=ES, ST=Madrid, L=Madrid, O=niwi.nz, OU=IT, CN=*.niwi.nz/emailAddress=niwi@niwi.nz
         [...]
     Signature Algorithm: sha256WithRSAEncryption
         [...]
