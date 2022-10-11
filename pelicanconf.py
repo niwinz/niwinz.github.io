@@ -13,14 +13,17 @@ DEFAULT_PAGINATION = 20
 USE_FOLDER_AS_CATEGORY = True
 
 GITHUB = "https://github.com/niwinz"
-RELATIVE_URLS = False
+RELATIVE_URLS = True
 
 THEME = "themes/niwibe"
-LOCALE = ["en_US.utf8"]
-DEFAULT_LANG = "en_US"
+CSS_FILE = "main.css"
 
-FEED_ALL_RSS = "feeds/all.rss.xml"
-CATEGORY_FEED_RSS = "feeds/{slug}.rss.xml"
+# LOCALE = ["en_US.utf8"]
+DEFAULT_LANG = "en"
+
+FEED_ALL_ATOM = 'feeds/all.atom.xml'
+CATEGORY_FEED_ATOM = 'feeds/{slug}.atom.xml'
+
 FILENAME_METADATA = "(?P<date>\d{4}-\d{2}-\d{2})-(?P<slug>.*)"
 
 ARTICLE_URL = "{date:%Y}/{date:%m}/{date:%d}/{slug}/"
