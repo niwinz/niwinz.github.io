@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content_title %}{% endblock %}
 {% block content %}
-  <section id="intro">
+  <header class="home">
     <a href="{{ SITEURL }}/">
       <h1>{{ SITENAME }}</h1>
     </a>
@@ -20,13 +20,13 @@
       <br />
       <br />
     </p>
-  </section>
+  </header>
 
-  <section id="article-list">
+  <section class="article-list">
     {% if articles %}
       <ol>
         {% for article in articles %}
-          <li class="truncate">
+          <li>
             <span class="article-date">{{ article.date|strftime('%d %b %Y') }}</span>
             <a href="{{ SITEURL }}/{{ article.url }}" rel="bookmark" title="Permalink to {{ article.title}}">{{ article.title }}</a>
           </li>

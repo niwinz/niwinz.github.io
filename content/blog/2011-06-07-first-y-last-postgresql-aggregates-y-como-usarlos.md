@@ -1,9 +1,19 @@
 Title: First y Last postgresql aggregates y como usarlos en django.
 Tags: postgresql, django
+Status: draft
 
-Muchas veces nos encontramos en la situacion, cuando necesitamos sacar una lista ordenada de ultimos elementos (heterogeneos) agrupado por una "foreign key", y no sere de menos. Investigando y probando sobre el ORM de Django, a ver si se podria hacer algo, y ya perdidas todas la esperanzas me he topado con [este articulo.](http://www.postgresonline.com/journal/archives/68-More-Aggregate-Fun-Whos-on-First-and-Whos-on-Last.html)
+Muchas veces nos encontramos en la situacion, cuando necesitamos sacar
+una lista ordenada de ultimos elementos (heterogeneos) agrupado por
+una "foreign key", y no sere de menos. Investigando y probando sobre
+el ORM de Django, a ver si se podria hacer algo, y ya perdidas todas
+la esperanzas me he topado con [este
+articulo.](http://www.postgresonline.com/journal/archives/68-More-Aggregate-Fun-Whos-on-First-and-Whos-on-Last.html)
 
-Como dice, MS access tiene un particular conjunto de Aggregates, llamadas First y Last, que nos permiten secar primero o el último elemento de una consulta. Como sabemos que Access no es perfecto, veremos de crear nuestro mundo perfecto en PostgreSQL (traducción literal).
+Como dice, MS access tiene un particular conjunto de Aggregates,
+llamadas First y Last, que nos permiten secar primero o el último
+elemento de una consulta. Como sabemos que Access no es perfecto,
+veremos de crear nuestro mundo perfecto en PostgreSQL (traducción
+literal).
 
 ### Definicion de funciones y aggregates: ###
 
@@ -42,7 +52,8 @@ Como dice, MS access tiene un particular conjunto de Aggregates, llamadas First 
 
 ### Aplicando a la practica: ###
 
-Ahora suponemos que tenemos Item's u que cada uno pertenece a un Design, ahora queremos sacar el último item insertado por cada Design.
+Ahora suponemos que tenemos Item's u que cada uno pertenece a un
+Design, ahora queremos sacar el último item insertado por cada Design.
 
 Este seria un ejemplo de sql:
 

@@ -10,7 +10,7 @@
 {% block title %}{{ super() }} : {{ article.title }}{% endblock %}
 {% block content %}
   <header>
-    <a href="{{ SITEURL }}"><small>(return to home)</small></a>
+    <a class="back" href="{{ SITEURL }}"><< back</a>
     <h1>
       <a href="{{ SITEURL }}/{{ article.url }}" id="page-title">{{ article.title }}</a>
     </h1>

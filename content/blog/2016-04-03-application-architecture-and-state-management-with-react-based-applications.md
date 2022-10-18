@@ -1,4 +1,4 @@
-Title: Application architecture and state management with react based applications.
+Title: Application architecture and state management with react based applications
 Tags: rum, react, clojurescript, architecture
 Author: Andrey Antukh
 
@@ -9,7 +9,7 @@ is scaling pretty well for relatively big project, so I decided to write about i
 I will use ClojureScript as base lenguage but the main ideas explained here can
 be done with plain javascript with minor adaptations.
 
-## TL;DR ##
+## TL;DR
 
 A quick summary of the design decisions (almost all explained in the article):
 

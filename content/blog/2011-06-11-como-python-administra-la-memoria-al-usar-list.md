@@ -1,5 +1,6 @@
 Title: Como python administra la memoria al usar list()
 Tags: python
+Status: draft
 
 En python, tenemos varios contenedores de variables, y en este caso hablaremos de tuplas y listas. Y aveces nos surgen las dudas de como administra python la memoria a la hora de conversión de una tupla a una lista. O mejor dicho, que cuando convertimos de una tupla a una lista, los objetos que los contienen también son instancias nuevas?
 

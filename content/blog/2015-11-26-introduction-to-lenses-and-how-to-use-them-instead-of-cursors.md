@@ -1,5 +1,6 @@
 Title: Introduction to lenses and how to use them instead of cursors
 Tags: clojurescript, state, cursors, reactjs, lens
+Status: draft
 
 The cursors abstraction is so far the most used approach for delimit the vision
 of the global state for react components in ClojureScript applications. But that

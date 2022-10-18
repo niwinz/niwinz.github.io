@@ -24,10 +24,8 @@
   <body>
     <main>
       {% include 'github.html' %}
-      <div class="entry">
-        {% block content %}
-        {% endblock %}
-      </div>
+      {% block content %}
+      {% endblock %}
       </div>
       {% include 'analytics.html' %}
     </main>

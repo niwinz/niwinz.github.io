@@ -1,5 +1,6 @@
 Title: Using reduce functions for state transformations
 Tags: clojurescript, state management, state, reactjs, multimethods
+Status: draft
 
 Most of the times I found clojurescript web applications mixing UI code with
 state transformation logic, that inherently tends to create a lot of coupling
