@@ -42,8 +42,7 @@
     </div>
   </header>
   <article>
-    <div id="article-content">
-      <p>I'm pretty sure that almost everyone that have used PostgreSQL knows the <code>now()</code>
+    <p>I'm pretty sure that almost everyone that have used PostgreSQL knows the <code>now()</code>
 function. Its purpose is mostly obvious: return the current timestamp or at least
 its name indicates that.</p>
 <div class="highlight"><pre><span></span><code><span class="gp">test=#</span><span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="n">now</span><span class="p">();</span><span class="w"></span>
@@ -106,7 +105,6 @@ that purpose:</p>
 <p>It always return the current wall-clock time based timestamp.</p>
 <p>Incorrect use of <code>now()</code> function can cause some unexpected situations having not
 monotonically increasing timestamps in log/audit tables (e.g. <a href="http://blog.thefourthparty.com/stopping-time-in-postgresql/">here</a>).</p>
-    </div>
   </article>
       </div>
     </main>

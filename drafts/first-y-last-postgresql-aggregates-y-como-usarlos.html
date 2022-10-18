@@ -42,8 +42,7 @@
     </div>
   </header>
   <article>
-    <div id="article-content">
-      <p>Muchas veces nos encontramos en la situacion, cuando necesitamos sacar
+    <p>Muchas veces nos encontramos en la situacion, cuando necesitamos sacar
 una lista ordenada de ultimos elementos (heterogeneos) agrupado por
 una "foreign key", y no sere de menos. Investigando y probando sobre
 el ORM de Django, a ver si se podria hacer algo, y ya perdidas todas
@@ -100,7 +99,6 @@ Design, ahora queremos sacar el último item insertado por cada Design.</p>
 <div class="highlight"><pre><span></span><code><span class="n">Item</span><span class="o">.</span><span class="n">object</span><span class="o">.</span><span class="n">raw</span><span class="p">(</span><span class="s2">&quot;SELECT first(id) as id FROM (SELECT * FROM items &quot;</span>
                 <span class="s2">&quot;ORDER BY created_date DESC) as foo GROUP BY design_id&quot;</span><span class="p">)</span>
 </code></pre></div>
-    </div>
   </article>
       </div>
     </main>

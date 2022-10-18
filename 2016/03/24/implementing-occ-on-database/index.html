@@ -42,8 +42,7 @@
     </div>
   </header>
   <article>
-    <div id="article-content">
-      <p>This is a simple tip for implement <a href="https://en.wikipedia.org/wiki/Optimistic_concurrency_control">OCC</a> directly on the database and so
+    <p>This is a simple tip for implement <a href="https://en.wikipedia.org/wiki/Optimistic_concurrency_control">OCC</a> directly on the database and so
 avoiding additional overhead that this can imply doing that at the application
 level.</p>
 <p>The <code>OCC</code> mechanism mainly consists in:</p>
@@ -106,7 +105,6 @@ using additional locks or more stronger isolation level for maintain
 consistency. PostgreSQL by default acquires <code>ROW EXCLUSIVE</code> locks
 for each row in <code>UPDATE</code> statements that already protects you from
 possible race condition.</p>
-    </div>
   </article>
       </div>
     </main>

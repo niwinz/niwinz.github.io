@@ -43,8 +43,7 @@
     </div>
   </header>
   <article>
-    <div id="article-content">
-      <p>If you are here, probaly you know about the new trending things like relay,
+    <p>If you are here, probaly you know about the new trending things like relay,
 falcor or om.next. In contrary to them, I'll try to explain my throughts about
 state management in clojurescript web applications.</p>
 <h2>Local state</h2>
@@ -189,7 +188,6 @@ works completly in client side.</p>
 <span class="p">(</span><span class="nf">m/mlet</span> <span class="p">[</span><span class="nv">user</span> <span class="p">(</span><span class="nf">s/read</span> <span class="nv">store</span> <span class="p">[</span><span class="ss">:get-user</span> <span class="mi">1</span><span class="p">])]</span>
   <span class="p">(</span><span class="nf">swap!</span> <span class="nv">state-transition</span> <span class="p">[</span><span class="ss">:add-user</span> <span class="nv">user</span><span class="p">]))</span>
 </code></pre></div>
-    </div>
   </article>
       </div>
     </main>

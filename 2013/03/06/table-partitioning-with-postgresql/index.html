@@ -41,8 +41,7 @@
     </div>
   </header>
   <article>
-    <div id="article-content">
-      <p>PostgreSQL supports partitioning via table inheritance. So the partitioning is made in such a way that every child table inherits single parent table. Parent table is empty and it exists just to describe the whole data set.</p>
+    <p>PostgreSQL supports partitioning via table inheritance. So the partitioning is made in such a way that every child table inherits single parent table. Parent table is empty and it exists just to describe the whole data set.</p>
 <p>The real benefit of table partitioning is a performance improvement with tables with amount of huge data. Decreases a index size, because you create a distinct index for each partition and making it more likely that the heavily-used parts of the indexes fit in memory.</p>
 <p>PostgreSQL table partitioning can be implemented in two ways: <strong>range partitioning</strong> or <strong>list partitioning</strong>.</p>
 <p>Range partitioning can be done by ranges like (1-1000, 1001-2000, ...) and list partitioning can be done with explicit list of keys. There are no real differences between the two ways, you have to choose one depending on the problem to be solved.</p>
@@ -175,7 +174,6 @@ defined with CHECK statement. You can activate it with:</p>
 </ul>
 </div>
 
-    </div>
   </article>
       </div>
     </main>

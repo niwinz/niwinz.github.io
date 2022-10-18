@@ -41,8 +41,7 @@
     </div>
   </header>
   <article>
-    <div id="article-content">
-      <p>This is a small tip to view the replication status of slave postgresql servers. The simplest way
+    <p>This is a small tip to view the replication status of slave postgresql servers. The simplest way
 to see the replication state on a master server is executing this query:</p>
 <div class="highlight"><pre><span></span><span class="k">select</span><span class="w"> </span><span class="n">client_addr</span><span class="p">,</span><span class="w"> </span><span class="k">state</span><span class="p">,</span><span class="w"> </span><span class="n">sent_location</span><span class="p">,</span><span class="w"> </span><span class="n">write_location</span><span class="p">,</span><span class="w"></span>
 <span class="w">        </span><span class="n">flush_location</span><span class="p">,</span><span class="w"> </span><span class="n">replay_location</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">pg_stat_replication</span><span class="p">;</span><span class="w"></span>
@@ -71,7 +70,6 @@ However, in a system where there are few writes, the &quot;replication_delay&quo
 because the last replayed transaction timestamp isn't increasing (this is generally the same
 limitation as MySQL's SHOW SLAVE STATUS output).</p>
 
-    </div>
   </article>
       </div>
     </main>
