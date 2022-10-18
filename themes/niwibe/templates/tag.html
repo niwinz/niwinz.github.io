@@ -4,10 +4,13 @@
 {% block title %}{{ SITENAME }} - {{ tag }}{% endblock %}
 
 {% block content %}
-  <section id="article-list">
-    <a href="{{ SITEURL }}"><small>(return to home)</small></a>
+  <header class="home">
+    <a class="back" href="{{ SITEURL }}"><< back</a>
+    <h2>Tag: {{ tag }}</h2>
+  </header>
+
+  <section class="article-list">
     {% if articles %}
-      <h2>Tag: {{ tag }}</h2>
       <ol>
         {% for article in articles %}
           <li class="truncate">
