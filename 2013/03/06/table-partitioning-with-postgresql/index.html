@@ -3,8 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <title>niwi.nz : Table partitioning with PostgreSQL</title>
-    <meta name=viewport content='width=200, initial-scale=1'>
-
+    <meta name="viewport" content="width=200, initial-scale=1" />
   <meta name="desciption" content="PostgreSQL supports partitioning via table inheritance. So the partitioning is made in such a way that every child table inherits single parent table. Parent table is empty and it exists just to describe the whole data set. The real benefit of table partitioning is a performance improvement with tables with amount of huge data. Decreases a index size, because you create a distinct index for each partition and making it more likely that the heavily-used parts of the indexes fit in memory...." />
     <meta name="author" content="Andrey Antukh" />
 
@@ -17,9 +16,8 @@
 
   <body>
     <main>
-      <div class="entry">
   <header>
-    <a href="https://niwi.nz"><small>(return to home)</small></a>
+    <a class="back" href="https://niwi.nz"><< back</a>
     <h1>
       <a href="https://niwi.nz/2013/03/06/table-partitioning-with-postgresql/" id="page-title">Table partitioning with PostgreSQL</a>
     </h1>
@@ -179,7 +177,6 @@ defined with CHECK statement. You can activate it with:</p>
 
     </div>
   </article>
-      </div>
       </div>
     </main>
   </body>

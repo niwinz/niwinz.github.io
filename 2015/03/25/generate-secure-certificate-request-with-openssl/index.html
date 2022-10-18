@@ -3,8 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <title>niwi.nz : Generating a secure certificate request with OpenSSL</title>
-    <meta name=viewport content='width=200, initial-scale=1'>
-
+    <meta name="viewport" content="width=200, initial-scale=1" />
   <meta name="desciption" content="This is a little cheat sheet for personal use on how generate a secure certificate request using openssl. The first step is creating a strong private key. At this moment the 2048bits is the recommended key lenght. Security experts are projecting that 2048 bits will be sufficient for commercial use until around the year 2030 (Reference1 and Reference2 pdf) openssl genrsa -out ~/niwi.nz.key 2048 And the second step is create a proper csr (certificate request). I said proper because you should..." />
     <meta name="author" content="Andrey Antukh" />
 
@@ -17,9 +16,8 @@
 
   <body>
     <main>
-      <div class="entry">
   <header>
-    <a href="https://niwi.nz"><small>(return to home)</small></a>
+    <a class="back" href="https://niwi.nz"><< back</a>
     <h1>
       <a href="https://niwi.nz/2015/03/25/generate-secure-certificate-request-with-openssl/" id="page-title">Generating a secure certificate request with OpenSSL</a>
     </h1>
@@ -88,7 +86,6 @@ case it should never be <em>sha1</em> (<a href="https://konklone.com/post/why-go
 </code></pre></div>
     </div>
   </article>
-      </div>
       </div>
     </main>
   </body>

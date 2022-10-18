@@ -3,8 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <title>niwi.nz : First y Last postgresql aggregates y como usarlos en django.</title>
-    <meta name=viewport content='width=200, initial-scale=1'>
-
+    <meta name="viewport" content="width=200, initial-scale=1" />
   <meta name="desciption" content="Muchas veces nos encontramos en la situacion, cuando necesitamos sacar una lista ordenada de ultimos elementos (heterogeneos) agrupado por una &#34;foreign key&#34;, y no sere de menos. Investigando y probando sobre el ORM de Django, a ver si se podria hacer algo, y ya perdidas todas la esperanzas me he topado con este articulo. Como dice, MS access tiene un particular conjunto de Aggregates, llamadas First y Last, que nos permiten secar primero o el último elemento de una consulta. Como..." />
     <meta name="author" content="Andrey Antukh" />
 
@@ -17,11 +16,10 @@
 
   <body>
     <main>
-      <div class="entry">
   <header>
-    <a href="https://niwi.nz"><small>(return to home)</small></a>
+    <a class="back" href="https://niwi.nz"><< back</a>
     <h1>
-      <a href="https://niwi.nz/2011/06/07/first-y-last-postgresql-aggregates-y-como-usarlos/" id="page-title">First y Last postgresql aggregates y como usarlos en django.</a>
+      <a href="https://niwi.nz/drafts/first-y-last-postgresql-aggregates-y-como-usarlos.html" id="page-title">First y Last postgresql aggregates y como usarlos en django.</a>
     </h1>
     <div class="article-meta">
         <small class="time">
@@ -45,8 +43,17 @@
   </header>
   <article>
     <div id="article-content">
-      <p>Muchas veces nos encontramos en la situacion, cuando necesitamos sacar una lista ordenada de ultimos elementos (heterogeneos) agrupado por una "foreign key", y no sere de menos. Investigando y probando sobre el ORM de Django, a ver si se podria hacer algo, y ya perdidas todas la esperanzas me he topado con <a href="http://www.postgresonline.com/journal/archives/68-More-Aggregate-Fun-Whos-on-First-and-Whos-on-Last.html">este articulo.</a></p>
-<p>Como dice, MS access tiene un particular conjunto de Aggregates, llamadas First y Last, que nos permiten secar primero o el último elemento de una consulta. Como sabemos que Access no es perfecto, veremos de crear nuestro mundo perfecto en PostgreSQL (traducción literal).</p>
+      <p>Muchas veces nos encontramos en la situacion, cuando necesitamos sacar
+una lista ordenada de ultimos elementos (heterogeneos) agrupado por
+una "foreign key", y no sere de menos. Investigando y probando sobre
+el ORM de Django, a ver si se podria hacer algo, y ya perdidas todas
+la esperanzas me he topado con <a href="http://www.postgresonline.com/journal/archives/68-More-Aggregate-Fun-Whos-on-First-and-Whos-on-Last.html">este
+articulo.</a></p>
+<p>Como dice, MS access tiene un particular conjunto de Aggregates,
+llamadas First y Last, que nos permiten secar primero o el último
+elemento de una consulta. Como sabemos que Access no es perfecto,
+veremos de crear nuestro mundo perfecto en PostgreSQL (traducción
+literal).</p>
 <h3>Definicion de funciones y aggregates:</h3>
 <div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">first_element_state</span><span class="p">(</span><span class="n">anyarray</span><span class="p">,</span><span class="w"> </span><span class="n">anyelement</span><span class="p">)</span><span class="w"></span>
 <span class="w">    </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">anyarray</span><span class="w"> </span><span class="k">AS</span><span class="w"></span>
@@ -82,7 +89,8 @@
 </code></pre></div>
 
 <h3>Aplicando a la practica:</h3>
-<p>Ahora suponemos que tenemos Item's u que cada uno pertenece a un Design, ahora queremos sacar el último item insertado por cada Design.</p>
+<p>Ahora suponemos que tenemos Item's u que cada uno pertenece a un
+Design, ahora queremos sacar el último item insertado por cada Design.</p>
 <p>Este seria un ejemplo de sql:</p>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="k">first</span><span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">items</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">code</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">&#39;XXX%&#39;</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">created_date</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span><span class="w"></span>
 <span class="k">as</span><span class="w"> </span><span class="n">foo</span><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">design_id</span><span class="p">;</span><span class="w"></span>
@@ -94,7 +102,6 @@
 </code></pre></div>
     </div>
   </article>
-      </div>
       </div>
     </main>
   </body>

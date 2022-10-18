@@ -3,8 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <title>niwi.nz : Get current timestamp in PostgreSQL</title>
-    <meta name=viewport content='width=200, initial-scale=1'>
-
+    <meta name="viewport" content="width=200, initial-scale=1" />
   <meta name="desciption" content="I&#39;m pretty sure that almost everyone that have used PostgreSQL knows the now() function. Its purpose is mostly obvious: return the current timestamp or at least its name indicates that. test=# select now(); now ------------------------------- 2016-03-27 12:54:50.449097+00 (1 row) test=# select now(); now ------------------------------- 2016-03-27 12:58:52.217013+00 (1 row) But what is happens if we execute it inside of a transaction: test=# BEGIN; BEGIN test=# select now(); now..." />
     <meta name="author" content="Andrey Antukh" />
 
@@ -17,9 +16,8 @@
 
   <body>
     <main>
-      <div class="entry">
   <header>
-    <a href="https://niwi.nz"><small>(return to home)</small></a>
+    <a class="back" href="https://niwi.nz"><< back</a>
     <h1>
       <a href="https://niwi.nz/2016/03/28/get-current-timestamp-in-postgresql/" id="page-title">Get current timestamp in PostgreSQL</a>
     </h1>
@@ -110,7 +108,6 @@ that purpose:</p>
 monotonically increasing timestamps in log/audit tables (e.g. <a href="http://blog.thefourthparty.com/stopping-time-in-postgresql/">here</a>).</p>
     </div>
   </article>
-      </div>
       </div>
     </main>
   </body>

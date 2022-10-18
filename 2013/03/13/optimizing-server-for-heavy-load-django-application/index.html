@@ -3,8 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <title>niwi.nz : Optimizing server for heavy load wsgi application</title>
-    <meta name=viewport content='width=200, initial-scale=1'>
-
+    <meta name="viewport" content="width=200, initial-scale=1" />
   <meta name="desciption" content="Many times, we only care to optimize the database, nginx or WSGI server, and often is more than enough. But, when you have a web application that must be able to scale and support over 2000 concurrent users, this is totally insufficient. Here comes the part where we have to optimize the operating system, such as kernel parameters for TCP/IP stack, and more. File descriptor limit As a first step, we need to accept a lot of http requests. So we have to adapt nginx settings and operating system..." />
     <meta name="author" content="Andrey Antukh" />
 
@@ -17,9 +16,8 @@
 
   <body>
     <main>
-      <div class="entry">
   <header>
-    <a href="https://niwi.nz"><small>(return to home)</small></a>
+    <a class="back" href="https://niwi.nz"><< back</a>
     <h1>
       <a href="https://niwi.nz/2013/03/13/optimizing-server-for-heavy-load-django-application/" id="page-title">Optimizing server for heavy load wsgi application</a>
     </h1>
@@ -144,7 +142,6 @@ net.ipv4.ip_local_port_range=1024 65535
 
     </div>
   </article>
-      </div>
       </div>
     </main>
   </body>

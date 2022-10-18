@@ -3,8 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <title>niwi.nz : Auto currying with clojure</title>
-    <meta name=viewport content='width=200, initial-scale=1'>
-
+    <meta name="viewport" content="width=200, initial-scale=1" />
   <meta name="desciption" content="Currying, is one of the much others featues that haskell implements nativelly but is not widelly extended on lisp like languages. But thanks to the power of lisp, it should be possible to extend the language so that is able to support autocurry. This is my simple experiment using clojure macros for implement autocurrying: (defmacro defc [identifier bindings &amp; body] (let [n# (count bindings)] `(def ~identifier (fn [&amp; args#] (if (&lt; (count args#) ~n#) (apply partial ~identifier..." />
     <meta name="author" content="Andrey Antukh" />
 
@@ -17,9 +16,8 @@
 
   <body>
     <main>
-      <div class="entry">
   <header>
-    <a href="https://niwi.nz"><small>(return to home)</small></a>
+    <a class="back" href="https://niwi.nz"><< back</a>
     <h1>
       <a href="https://niwi.nz/2014/02/03/auto-currying-with-clojure/" id="page-title">Auto currying with clojure</a>
     </h1>
@@ -91,7 +89,6 @@ was an experiment of ten minuts.</p>
 
     </div>
   </article>
-      </div>
       </div>
     </main>
   </body>

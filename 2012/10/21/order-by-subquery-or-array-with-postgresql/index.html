@@ -3,8 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <title>niwi.nz : Order by subquery array with PostgreSQL</title>
-    <meta name=viewport content='width=200, initial-scale=1'>
-
+    <meta name="viewport" content="width=200, initial-scale=1" />
   <meta name="desciption" content="Sometimes we need to get a certain number of elements of the database by its primary key and another field. We have the values and the order in which we want to get the data. To see examples, create a test table and insert sample values: test=# CREATE TABLE test_table (num int); CREATE TABLE test=# INSERT INTO test_table (num) VALUES (1), (2), (3), (4); INSERT 0 4 test=# select num from test_table ; num ----- 1 2 3 4 (4 rows) We can see that the default order, is by insert. Now imagine that..." />
     <meta name="author" content="Andrey Antukh" />
 
@@ -17,9 +16,8 @@
 
   <body>
     <main>
-      <div class="entry">
   <header>
-    <a href="https://niwi.nz"><small>(return to home)</small></a>
+    <a class="back" href="https://niwi.nz"><< back</a>
     <h1>
       <a href="https://niwi.nz/2012/10/21/order-by-subquery-or-array-with-postgresql/" id="page-title">Order by subquery array with PostgreSQL</a>
     </h1>
@@ -44,70 +42,79 @@
   </header>
   <article>
     <div id="article-content">
-      <p>Sometimes we need to get a certain number of elements of the database by its primary key and another field. We have the values and the order in which we want to get the data.</p>
+      <p>Sometimes we need to get a certain number of elements of the database
+by its primary key and another field. We have the values and the order
+in which we want to get the data.</p>
 <p>To see examples, create a test table and insert sample values:</p>
-<div class="highlight"><pre><span></span><span class="n">test</span><span class="o">=#</span><span class="w"> </span><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">test_table</span><span class="w"> </span><span class="p">(</span><span class="n">num</span><span class="w"> </span><span class="nb">int</span><span class="p">);</span><span class="w"></span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"></span>
-<span class="n">test</span><span class="o">=#</span><span class="w"> </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">test_table</span><span class="w"> </span><span class="p">(</span><span class="n">num</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="mi">2</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="mi">3</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="mi">4</span><span class="p">);</span><span class="w"></span>
-<span class="k">INSERT</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">4</span><span class="w"></span>
-<span class="n">test</span><span class="o">=#</span><span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="n">num</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">test_table</span><span class="w"> </span><span class="p">;</span><span class="w"></span>
-<span class="w"> </span><span class="n">num</span><span class="w"></span>
-<span class="c1">-----</span>
-<span class="w">   </span><span class="mi">1</span><span class="w"></span>
-<span class="w">   </span><span class="mi">2</span><span class="w"></span>
-<span class="w">   </span><span class="mi">3</span><span class="w"></span>
-<span class="w">   </span><span class="mi">4</span><span class="w"></span>
-<span class="p">(</span><span class="mi">4</span><span class="w"> </span><span class="k">rows</span><span class="p">)</span><span class="w"></span>
-</pre></div>
-<p>We can see that the default order, is by insert.</p>
-<p>Now imagine that we want to obtain a subset of the data in a specific order. We use the sentence &quot;IN&quot; to make the query.</p>
-<div class="highlight"><pre><span></span><span class="n">test</span><span class="o">=#</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="n">num</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">test_table</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">num</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">2</span><span class="p">);</span><span class="w"></span>
-<span class="w"> </span><span class="n">num</span><span class="w"></span>
-<span class="c1">-----</span>
-<span class="w">   </span><span class="mi">2</span><span class="w"></span>
-<span class="w">   </span><span class="mi">4</span><span class="w"></span>
-<span class="p">(</span><span class="mi">2</span><span class="w"> </span><span class="k">rows</span><span class="p">)</span><span class="w"></span>
-</pre></div>
-<p>We notice that the order of the result does not correspond with what we really want. The first approach is to use conditional expressions with ORDER BY (CASE).</p>
-<div class="highlight"><pre><span></span><span class="n">test</span><span class="o">=#</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="n">num</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">test_table</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">num</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">CASE</span><span class="w"> </span><span class="n">num</span><span class="w"> </span><span class="k">WHEN</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">WHEN</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="k">END</span><span class="p">;</span><span class="w"></span>
-<span class="w"> </span><span class="n">num</span><span class="w"></span>
-<span class="c1">-----</span>
-<span class="w">   </span><span class="mi">4</span><span class="w"></span>
-<span class="w">   </span><span class="mi">2</span><span class="w"></span>
-<span class="p">(</span><span class="mi">2</span><span class="w"> </span><span class="k">rows</span><span class="p">)</span><span class="w"></span>
-</pre></div>
-<p>Now we have the order and the expected result, but it is not usable, especially when the list ids can be variable. Building this sql for each case is really not usable.</p>
-<p>The next approach, we will solve this problem. We define the following function:</p>
-<div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">idx</span><span class="p">(</span><span class="n">anyarray</span><span class="p">,</span><span class="w"> </span><span class="n">anyelement</span><span class="p">)</span><span class="w"></span>
-<span class="w">  </span><span class="k">RETURNS</span><span class="w"> </span><span class="nb">int</span><span class="w"> </span><span class="k">AS</span><span class="w"></span>
-<span class="err">$$</span><span class="w"></span>
-<span class="w">  </span><span class="k">SELECT</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
-<span class="w">     </span><span class="k">SELECT</span><span class="w"> </span><span class="n">generate_series</span><span class="p">(</span><span class="n">array_lower</span><span class="p">(</span><span class="err">$</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span><span class="n">array_upper</span><span class="p">(</span><span class="err">$</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span><span class="w"></span>
-<span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="k">g</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"></span>
-<span class="w">  </span><span class="k">WHERE</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">2</span><span class="w"></span>
-<span class="w">  </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
-<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="k">sql</span><span class="w"> </span><span class="k">IMMUTABLE</span><span class="p">;</span><span class="w"></span>
-</pre></div>
-<p>Now we see an example of the above query but using this function:</p>
-<div class="highlight"><pre><span></span><span class="n">test</span><span class="o">=#</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="n">num</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">test_table</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">num</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">idx</span><span class="p">(</span><span class="s1">&#39;{4,2}&#39;</span><span class="p">::</span><span class="nb">int</span><span class="p">[],</span><span class="w"> </span><span class="n">num</span><span class="p">);</span><span class="w"></span>
-<span class="w"> </span><span class="n">num</span><span class="w"></span>
-<span class="c1">-----</span>
-<span class="w">   </span><span class="mi">4</span><span class="w"></span>
-<span class="w">   </span><span class="mi">2</span><span class="w"></span>
-<span class="p">(</span><span class="mi">2</span><span class="w"> </span><span class="k">rows</span><span class="p">)</span><span class="w"></span>
-</pre></div>
-<p>This latter case is much more usable in my opinion.</p>
-<div class="section" id="links">
-<h2>Links</h2>
-<ul class="simple">
-<li><a class="reference external" href="http://www.postgresql.org/docs/9.2/static/functions-conditional.html">http://www.postgresql.org/docs/9.2/static/functions-conditional.html</a></li>
-<li><a class="reference external" href="http://stackoverflow.com/questions/2408965/postgres-subquery-ordering-by-subquery">http://stackoverflow.com/questions/2408965/postgres-subquery-ordering-by-subquery</a></li>
-</ul>
-</div>
+<div class="highlight"><pre><span></span><code><span class="gp">test=#</span><span class="w"> </span><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">test_table</span><span class="w"> </span><span class="p">(</span><span class="n">num</span><span class="w"> </span><span class="nb">int</span><span class="p">);</span><span class="w"></span>
+<span class="go">CREATE TABLE</span>
+<span class="gp">test=#</span><span class="w"> </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">test_table</span><span class="w"> </span><span class="p">(</span><span class="n">num</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="mf">1</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="mf">2</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="mf">3</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="mf">4</span><span class="p">);</span><span class="w"></span>
+<span class="go">INSERT 0 4</span>
+<span class="gp">test=#</span><span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="n">num</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">test_table</span><span class="w"> </span><span class="p">;</span><span class="w"></span>
+<span class="go"> num</span>
+<span class="go">-----</span>
+<span class="go">   1</span>
+<span class="go">   2</span>
+<span class="go">   3</span>
+<span class="go">   4</span>
+<span class="go">(4 rows)</span>
+</code></pre></div>
 
+<p>We can see that the default order, is by insert.</p>
+<p>Now imagine that we want to obtain a subset of the data in a specific
+order. We use the sentence "IN" to make the query.</p>
+<div class="highlight"><pre><span></span><code><span class="gp">test=#</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="n">num</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">test_table</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">num</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="p">(</span><span class="mf">4</span><span class="p">,</span><span class="mf">2</span><span class="p">);</span><span class="w"></span>
+<span class="go"> num </span>
+<span class="go">-----</span>
+<span class="go">   2</span>
+<span class="go">   4</span>
+<span class="go">(2 rows)</span>
+</code></pre></div>
+
+<p>We notice that the order of the result does not correspond with what
+we really want. The first approach is to use conditional expressions
+with ORDER BY (CASE).</p>
+<div class="highlight"><pre><span></span><code><span class="gp">test=#</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="n">num</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">test_table</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">num</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="p">(</span><span class="mf">4</span><span class="p">,</span><span class="mf">2</span><span class="p">)</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">CASE</span><span class="w"> </span><span class="n">num</span><span class="w"> </span><span class="k">WHEN</span><span class="w"> </span><span class="mf">4</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="mf">1</span><span class="w"> </span><span class="k">WHEN</span><span class="w"> </span><span class="mf">2</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="mf">2</span><span class="w"> </span><span class="k">END</span><span class="p">;</span><span class="w"></span>
+<span class="go"> num </span>
+<span class="go">-----</span>
+<span class="go">   4</span>
+<span class="go">   2</span>
+<span class="go">(2 rows)</span>
+</code></pre></div>
+
+<p>Now we have the order and the expected result, but it is not usable,
+especially when the list ids can be variable. Building this sql for
+each case is really not usable.</p>
+<p>The next approach, we will solve this problem. We define the following
+function:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">idx</span><span class="p">(</span><span class="nb">anyarray</span><span class="p">,</span><span class="w"> </span><span class="nb">anyelement</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">RETURNS</span><span class="w"> </span><span class="nb">int</span><span class="w"> </span><span class="k">AS</span><span class="w"></span>
+<span class="s">$$</span><span class="w"></span>
+<span class="w">  </span><span class="k">SELECT</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
+<span class="w">     </span><span class="k">SELECT</span><span class="w"> </span><span class="n">generate_series</span><span class="p">(</span><span class="n">array_lower</span><span class="p">(</span><span class="nv">$1</span><span class="p">,</span><span class="mf">1</span><span class="p">),</span><span class="n">array_upper</span><span class="p">(</span><span class="nv">$1</span><span class="p">,</span><span class="mf">1</span><span class="p">))</span><span class="w"></span>
+<span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="n">g</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">WHERE</span><span class="w"> </span><span class="nv">$1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">$2</span><span class="w"></span>
+<span class="w">  </span><span class="k">LIMIT</span><span class="w"> </span><span class="mf">1</span><span class="p">;</span><span class="w"></span>
+<span class="s">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="k">sql</span><span class="w"> </span><span class="k">IMMUTABLE</span><span class="p">;</span><span class="w"></span>
+</code></pre></div>
+
+<p>Now we see an example of the above query but using this function:</p>
+<div class="highlight"><pre><span></span><code><span class="gp">test=#</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="n">num</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">test_table</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">num</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="p">(</span><span class="mf">4</span><span class="p">,</span><span class="mf">2</span><span class="p">)</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">idx</span><span class="p">(</span><span class="s1">&#39;{4,2}&#39;</span><span class="o">::</span><span class="nb">int</span><span class="p">[],</span><span class="w"> </span><span class="n">num</span><span class="p">);</span><span class="w"></span>
+<span class="go"> num </span>
+<span class="go">-----</span>
+<span class="go">   4</span>
+<span class="go">   2</span>
+<span class="go">(2 rows)</span>
+</code></pre></div>
+
+<p>This latter case is much more usable in my opinion.</p>
+<h2>Links</h2>
+<ul>
+<li><a href="http://www.postgresql.org/docs/9.2/static/functions-conditional.html">http://www.postgresql.org/docs/9.2/static/functions-conditional.html</a></li>
+<li><a href="http://stackoverflow.com/questions/2408965/postgres-subquery-ordering-by-subquery">http://stackoverflow.com/questions/2408965/postgres-subquery-ordering-by-subquery</a></li>
+</ul>
     </div>
   </article>
-      </div>
       </div>
     </main>
   </body>

@@ -3,8 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <title>niwi.nz : Best practices storing time data on the database</title>
-    <meta name=viewport content='width=200, initial-scale=1'>
-
+    <meta name="viewport" content="width=200, initial-scale=1" />
   <meta name="desciption" content="There is my personal list of best practices handling with time related data and its persistence. I assume they are for PostgreSQL in first time but that recommendations are almost the same for other databases: Set your database timezone to UTC or at least set the connection timezone to UTC and persists datetimes always in UTC. Perform any time related logic with datetimes in UTC Treat all non-zero UTC datetimes as an input error. Only translate datetimes to specific timezone when you go to..." />
     <meta name="author" content="Andrey Antukh" />
 
@@ -17,9 +16,8 @@
 
   <body>
     <main>
-      <div class="entry">
   <header>
-    <a href="https://niwi.nz"><small>(return to home)</small></a>
+    <a class="back" href="https://niwi.nz"><< back</a>
     <h1>
       <a href="https://niwi.nz/2016/03/26/best-practices-storing-time-data-on-the-database/" id="page-title">Best practices storing time data on the database</a>
     </h1>
@@ -113,7 +111,6 @@ A great example is <a href="http://hibernate.org/">Hibernate</a>, that setup's t
 columns without timezone in the default dialect.</p>
     </div>
   </article>
-      </div>
       </div>
     </main>
   </body>

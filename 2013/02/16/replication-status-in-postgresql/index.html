@@ -3,8 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <title>niwi.nz : Show replication status in PostgreSQL</title>
-    <meta name=viewport content='width=200, initial-scale=1'>
-
+    <meta name="viewport" content="width=200, initial-scale=1" />
   <meta name="desciption" content="This is a small tip to view the replication status of slave postgresql servers. The simplest way to see the replication state on a master server is executing this query: select client_addr, state, sent_location, write_location, flush_location, replay_location from pg_stat_replication; This query can output can be like this: postgres=# select client_addr, state, sent_location postgres-# write_location, flush_location, replay_location, sync_priority from pg_stat_replication; client_addr |..." />
     <meta name="author" content="Andrey Antukh" />
 
@@ -17,9 +16,8 @@
 
   <body>
     <main>
-      <div class="entry">
   <header>
-    <a href="https://niwi.nz"><small>(return to home)</small></a>
+    <a class="back" href="https://niwi.nz"><< back</a>
     <h1>
       <a href="https://niwi.nz/2013/02/16/replication-status-in-postgresql/" id="page-title">Show replication status in PostgreSQL</a>
     </h1>
@@ -75,7 +73,6 @@ limitation as MySQL's SHOW SLAVE STATUS output).</p>
 
     </div>
   </article>
-      </div>
       </div>
     </main>
   </body>
