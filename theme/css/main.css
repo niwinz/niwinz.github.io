@@ -80,6 +80,10 @@ article a {
   font-weight: 400;
 }
 
+article p, article li {
+  line-height: 1.6rem;
+}
+
 article p small {
   font-size: 0.8rem;
   font-weight: 200;
@@ -104,10 +108,6 @@ h5 {
 
 h6 {
   font-size: 0.9rem;
-}
-
-p {
-  line-height: 1.6rem;
 }
 
 section.article-list {
