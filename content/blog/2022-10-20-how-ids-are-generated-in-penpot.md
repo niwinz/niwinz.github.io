@@ -17,11 +17,11 @@ backend. From the start, we already had a distributed ID generation
 scenario but a simple incremental in the database table was not enough
 for us.
 
-The quick approach would have been to use the typical UUID **v4**, but
+The quick approach would have been to use the typical **UUIv4**, but
 as this variant is mainly generated with random data it implies
 certain problems: it’s not sortable and causes fragmentation in the
 database indexes, thus degrading query performance over time. So we
-began by using UUID v1.
+began by using **UUIDv1**.
 
 ### What alternatives we considered before choosing UUID?
 
@@ -45,7 +45,7 @@ route:
 There are many custom implementations with different characteristics
 and there are no plan for list them all.
 
-Clearly, our choice to use UUID v1 doesn't comes without its own
+Clearly, our choice to use **UUIDv1** doesn't comes without its own
 problems: unlike v4, it's partially sortable because it strangely
 places the least significant bits of timestamp at the start in binary
 encoding, unusual 100-ns precision gregorian epoch, and also it needs
@@ -58,13 +58,13 @@ After the conversation, I've decided to review how we're generating
 uuids and I've come across this [new revision of the UUID RFC][6]
 where the new 3 UUID formats are outlined: the v6, v7 and v8.
 
-To summarize, we have v6 which is similar to v1 with an improved
-timestamp bits ordering, v7 (with its variants 1 and 2) mixes between
-v4 and v6 ,with a more standard epoch, precision in milliseconds
-combining it with a random part instead of the MAC address. And
-finally v8, which basically defines only the minimum necessary to
-preserve compatibility with the rest of the formats and leaves the
-rest to the choice of the custom implementation.
+To summarize, we have **v6** which is similar to v1 with an improved
+timestamp bits ordering, **v7** (with its variants 1 and 2) mixes
+between v4 and v6 ,with a more standard epoch, precision in
+milliseconds combining it with a random part instead of the MAC
+address. And finally **v8**, which basically defines only the minimum
+necessary to preserve compatibility with the rest of the formats and
+leaves the rest to the choice of the custom implementation.
 
 ### The current approach
 
@@ -72,13 +72,13 @@ I have chosen to take good ideas from ULID and UUID v6 and implement a
 custom one using the UUID v8 format. These are the properties of our
 new UUID implementation:
 
-- 48bits timestamp (milliseconds precision, custom epoch: 2022-01-01
-  00:00:00)
-- 14bits random clockseq (monotonically increasing on timestamp
+- **48bits timestamp** (milliseconds precision, custom epoch:
+  2022-01-01 00:00:00)
+- **14bits random clockseq** (monotonically increasing on timestamp
   collision, allows 16384 ids/ms per host)
 - blocks (no exceptions raised) if clockseq overflows
-- 56bits of randomness, generated on library initialization
-- 4bits for user defined tag (allows distinguish between environments
+- **56bits of randomness**, generated on library initialization
+- **4bits for user defined tag** (allows distinguish between environments
   where the ID is generated)
 - don’t run out of range until 10941 AD
 - on clock regression, the 56bits of static randomness are

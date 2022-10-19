@@ -11,7 +11,7 @@ strong {
   color: #383838;
 }
 
-a, a:visited { text-decoration:none; color:rgb(17, 170, 34); }
+a, a:visited { text-decoration:none; color:rgb(10, 103, 21); }
 
 h1, h2, h3, h4, h5, h6, h7 {
   margin:0px;
@@ -74,6 +74,10 @@ header .article-meta {
 article {
   padding: 20px;
   padding-top: 0px;
+}
+
+article a {
+  font-weight: 400;
 }
 
 article p small {
