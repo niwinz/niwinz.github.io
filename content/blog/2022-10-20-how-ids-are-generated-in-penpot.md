@@ -1,6 +1,5 @@
 Title: How IDs are generated in Penpot
 Tags: penpot, clojure
-Status: hidden
 
 Let's begin by mentioning that this post was originated from a conversation I had with the
 [Taiga][9] development team about how we generate ID’s in [Penpot][0]. The idea was to know what
