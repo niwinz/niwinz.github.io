@@ -17,11 +17,11 @@ needed to be able to create IDs on both the frontend and the
 backend. From the start, we already had a distributed ID generation
 scenario but a simple incremental in the database table was not enough
 for us.&lt;/p&gt;
-&lt;p&gt;The quick approach would have been to use the typical UUID &lt;strong&gt;v4&lt;/strong&gt;, but
+&lt;p&gt;The quick approach would have been to use the typical &lt;strong&gt;UUIv4&lt;/strong&gt;, but
 as this variant is mainly generated with random data it implies
 certain problems: it’s not sortable and causes fragmentation in the
 database indexes, thus degrading query performance over time. So we
-began by using UUID v1.&lt;/p&gt;
+began by using &lt;strong&gt;UUIDv1&lt;/strong&gt;.&lt;/p&gt;
 &lt;h3&gt;What alternatives we considered before choosing UUID?&lt;/h3&gt;
 &lt;p&gt;We also considered several alternatives before going via the UUID
 route:&lt;/p&gt;
@@ -42,7 +42,7 @@ route:&lt;/p&gt;
 &lt;/ul&gt;
 &lt;p&gt;There are many custom implementations with different characteristics
 and there are no plan for list them all.&lt;/p&gt;
-&lt;p&gt;Clearly, our choice to use UUID v1 doesn't comes without its own
+&lt;p&gt;Clearly, our choice to use &lt;strong&gt;UUIDv1&lt;/strong&gt; doesn't comes without its own
 problems: unlike v4, it's partially sortable because it strangely
 places the least significant bits of timestamp at the start in binary
 encoding, unusual 100-ns precision gregorian epoch, and also it needs
@@ -53,25 +53,25 @@ the mac generating random data in the first use.&lt;/p&gt;
 &lt;p&gt;After the conversation, I've decided to review how we're generating
 uuids and I've come across this &lt;a href="https://datatracker.ietf.org/doc/html/draft-peabody-dispatch-new-uuid-format"&gt;new revision of the UUID RFC&lt;/a&gt;
 where the new 3 UUID formats are outlined: the v6, v7 and v8.&lt;/p&gt;
-&lt;p&gt;To summarize, we have v6 which is similar to v1 with an improved
-timestamp bits ordering, v7 (with its variants 1 and 2) mixes between
-v4 and v6 ,with a more standard epoch, precision in milliseconds
-combining it with a random part instead of the MAC address. And
-finally v8, which basically defines only the minimum necessary to
-preserve compatibility with the rest of the formats and leaves the
-rest to the choice of the custom implementation.&lt;/p&gt;
+&lt;p&gt;To summarize, we have &lt;strong&gt;v6&lt;/strong&gt; which is similar to v1 with an improved
+timestamp bits ordering, &lt;strong&gt;v7&lt;/strong&gt; (with its variants 1 and 2) mixes
+between v4 and v6 ,with a more standard epoch, precision in
+milliseconds combining it with a random part instead of the MAC
+address. And finally &lt;strong&gt;v8&lt;/strong&gt;, which basically defines only the minimum
+necessary to preserve compatibility with the rest of the formats and
+leaves the rest to the choice of the custom implementation.&lt;/p&gt;
 &lt;h3&gt;The current approach&lt;/h3&gt;
 &lt;p&gt;I have chosen to take good ideas from ULID and UUID v6 and implement a
 custom one using the UUID v8 format. These are the properties of our
 new UUID implementation:&lt;/p&gt;
 &lt;ul&gt;
-&lt;li&gt;48bits timestamp (milliseconds precision, custom epoch: 2022-01-01
-  00:00:00)&lt;/li&gt;
-&lt;li&gt;14bits random clockseq (monotonically increasing on timestamp
+&lt;li&gt;&lt;strong&gt;48bits timestamp&lt;/strong&gt; (milliseconds precision, custom epoch:
+  2022-01-01 00:00:00)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;14bits random clockseq&lt;/strong&gt; (monotonically increasing on timestamp
   collision, allows 16384 ids/ms per host)&lt;/li&gt;
 &lt;li&gt;blocks (no exceptions raised) if clockseq overflows&lt;/li&gt;
-&lt;li&gt;56bits of randomness, generated on library initialization&lt;/li&gt;
-&lt;li&gt;4bits for user defined tag (allows distinguish between environments
+&lt;li&gt;&lt;strong&gt;56bits of randomness&lt;/strong&gt;, generated on library initialization&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;4bits for user defined tag&lt;/strong&gt; (allows distinguish between environments
   where the ID is generated)&lt;/li&gt;
 &lt;li&gt;don’t run out of range until 10941 AD&lt;/li&gt;
 &lt;li&gt;on clock regression, the 56bits of static randomness are
