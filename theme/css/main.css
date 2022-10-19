@@ -102,6 +102,9 @@ h6 {
   font-size: 0.9rem;
 }
 
+p {
+  line-height: 1.6rem;
+}
 
 section.article-list {
   padding: 20px;
