@@ -1,5 +1,101 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>niwi.nz - Andrey Antukh</title><link href="https://niwi.nz/" rel="alternate"></link><link href="https://niwi.nz/feeds/andrey-antukh.atom.xml" rel="self"></link><id>https://niwi.nz/</id><updated>2017-03-01T00:00:00+00:00</updated><entry><title>Why GraphQL uses string based templates for queries?</title><link href="https://niwi.nz/2017/03/01/why-graphql-uses-string-based-templates-for-queries/" rel="alternate"></link><published>2017-03-01T00:00:00+00:00</published><updated>2017-03-01T00:00:00+00:00</updated><author><name>Andrey Antukh</name></author><id>tag:niwi.nz,2017-03-01:/2017/03/01/why-graphql-uses-string-based-templates-for-queries/</id><summary type="html">&lt;p&gt;I've followed the graphql development from its public announcement
+<feed xmlns="http://www.w3.org/2005/Atom"><title>niwi.nz - Andrey Antukh</title><link href="https://niwi.nz/" rel="alternate"></link><link href="https://niwi.nz/feeds/andrey-antukh.atom.xml" rel="self"></link><id>https://niwi.nz/</id><updated>2022-10-20T00:00:00+00:00</updated><entry><title>How IDs are generated in Penpot</title><link href="https://niwi.nz/2022/10/20/how-ids-are-generated-in-penpot/" rel="alternate"></link><published>2022-10-20T00:00:00+00:00</published><updated>2022-10-20T00:00:00+00:00</updated><author><name>Andrey Antukh</name></author><id>tag:niwi.nz,2022-10-20:/2022/10/20/how-ids-are-generated-in-penpot/</id><summary type="html">&lt;p&gt;Let's begin by mentioning that this post was originated from a conversation I had with the
+&lt;a href="https://taiga.io"&gt;Taiga&lt;/a&gt; development team about how we generate ID’s in &lt;a href="https://penpot.app"&gt;Penpot&lt;/a&gt;. The idea was to know what
+decisions we have made in this regard and understand the implementation details.&lt;/p&gt;
+&lt;p&gt;At &lt;a href="https://penpot.app"&gt;Penpot&lt;/a&gt;, since its inception …&lt;/p&gt;</summary><content type="html">&lt;p&gt;Let's begin by mentioning that this post was originated from a conversation I had with the
+&lt;a href="https://taiga.io"&gt;Taiga&lt;/a&gt; development team about how we generate ID’s in &lt;a href="https://penpot.app"&gt;Penpot&lt;/a&gt;. The idea was to know what
+decisions we have made in this regard and understand the implementation details.&lt;/p&gt;
+&lt;p&gt;At &lt;a href="https://penpot.app"&gt;Penpot&lt;/a&gt;, since its inception, we made the decision to use &lt;a href="https://www.rfc-editor.org/rfc/rfc4122.html"&gt;UUID&lt;/a&gt; to generate ID's. If you
+are not familiar with the subject, you’ll find useful this &lt;a href="https://en.wikipedia.org/wiki/Universally_unique_identifier"&gt;good article on wikipedia&lt;/a&gt; that
+explains a bit about UUID. The simplest rationale for generating IDs is that we needed to be able to
+create IDs on both the frontend and the backend. From the start, we already had a distributed ID
+generation scenario but a simple incremental in the database table was not enough for us.&lt;/p&gt;
+&lt;p&gt;The quick approach would have been to use the typical UUID &lt;strong&gt;v4&lt;/strong&gt;, but as this variant is mainly
+generated with random data it implies certain problems: it’s not sortable and causes fragmentation
+in the database indexes, thus degrading query performance over time. So we began by using UUID v1.&lt;/p&gt;
+&lt;p&gt;What alternatives we considered before choosing UUID?  We also considered several alternatives
+before going via the UUID route:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="https://github.com/ulid/spec"&gt;ulid&lt;/a&gt;: The basic idea behind ulid is very interesting because it is very close to the final
+  solution we have taken. The main problem it’s to do with the fact that if we want to store it
+  efficiently, we would have to decode the value to two int64s and store it in the database in two
+  separate fields, which would make all queries more cumbersome. I’m aware that, as an alternative,
+  we can take advantage of the UUID type of the database to store the 128 bits of this ID there, but
+  semantically it would be possibly confusing. Storing it in a string format is not an option,
+  because that would imply having more data to store and therefore larger indexes. &lt;/li&gt;
+&lt;li&gt;&lt;a href="https://github.com/muyo/sno"&gt;sno&lt;/a&gt;: in the same line as ulid, implemented only in go&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://github.com/ai/nanoid"&gt;nanoid&lt;/a&gt;: very similar to UUID v4. Plus you need to save the value as a string, hence we
+  discarded this option very quickly.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;There are many custom implementations with different characteristics and there are no plan for list
+them all.&lt;/p&gt;
+&lt;p&gt;Clearly, our choice to use UUID v1 doesn't comes without its own problems: unlike v4, it's partially
+sortable because it strangely places the least significant bits of timestamp at the start in binary
+encoding, unusual 100-ns precision gregorian epoch, and also it needs access to the MAC address
+among other less important things. As for our case, we expected to use it always in virtual
+environments, so the access to MAC was not so problematic. And at the frontend, we emulated the mac
+generating random data in the first use.&lt;/p&gt;
+&lt;p&gt;After the conversation, I've decided to review how we're generating uuids and I've come across this
+&lt;a href="https://datatracker.ietf.org/doc/html/draft-peabody-dispatch-new-uuid-format"&gt;new revision of the UUID RFC&lt;/a&gt; where the new 3 UUID formats are outlined: the v6, v7 and v8.&lt;/p&gt;
+&lt;p&gt;To summarize, we have v6 which is similar to v1 with an improved timestamp bits ordering, v7 (with
+its variants 1 and 2) mixes between v4 and v6 ,with a more standard epoch, precision in milliseconds
+combining it with a random part instead of the MAC address. And finally v8, which basically defines
+only the minimum necessary to preserve compatibility with the rest of the formats and leaves the
+rest to the choice of the custom implementation.&lt;/p&gt;
+&lt;p&gt;For Penpot, I have chosen to take good ideas from ULID and UUID v6 and implement a custom one using
+the UUID v8 format. These are the properties of our new UUID implementation:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;48bits timestamp (milliseconds precision, custom epoch: 2022-01-01 00:00:00)&lt;/li&gt;
+&lt;li&gt;14bits random clockseq (monotonically increasing on timestamp collision, allows 16384 ids/ms per host)&lt;/li&gt;
+&lt;li&gt;blocks (no exceptions raised) if clockseq overflows&lt;/li&gt;
+&lt;li&gt;56bits of randomness, generated on library initialization&lt;/li&gt;
+&lt;li&gt;4bits for user defined tag (allows distinguish between environments where the ID is generated)&lt;/li&gt;
+&lt;li&gt;don’t run out of range until 10941 AD&lt;/li&gt;
+&lt;li&gt;on clock regression, the 56bits of static randomness are reinitialized&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;With this: we maintain compatibility with the current solution as we continue to use the same type
+of data that is efficiently stored in the database; have better visual readability; better
+sortability and greatly improved performance. You can take a look at the &lt;a href="https://github.com/penpot/penpot/blob/develop/common/src/app/common/UUIDv8.java"&gt;JVM implementation
+here&lt;/a&gt; and the &lt;a href="https://github.com/penpot/penpot/blob/develop/common/src/app/common/uuid_impl.js"&gt;JS implementation here&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Here below is a benchmark that illustrates the difference in performance between different
+implementations and versions:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;;; This is a standard jdk way of generate UUID v4
+user=&amp;gt; (perf/bench :f #(java.util.UUID/randomUUID) :name &amp;quot;uuid-v4-java&amp;quot;)
+=&amp;gt; benchmarking: uuid-v4-java
+--&amp;gt; TOTAL: 9.95sec
+--&amp;gt; MEAN:  668.6ns
+
+;; This is the implementation we used previously
+;; https://github.com/danlentz/clj-uuid
+user=&amp;gt; (perf/bench :f #(clj-uuid/v1) :name &amp;quot;uuid-v1-clj&amp;quot;)
+=&amp;gt; benchmarking: uuid-v1-clj
+--&amp;gt; TOTAL: 10.01sec
+--&amp;gt; MEAN:  300.16ns
+
+;; This is third-party java library that generates UUID v1
+user=&amp;gt; (perf/bench :f #(UuidCreator/getTimeBased) :name &amp;quot;uuid-v1-java-uc&amp;quot;)
+=&amp;gt; benchmarking: uuid-v1-java-uc
+--&amp;gt; TOTAL: 10.02sec
+--&amp;gt; MEAN:  100.74ns
+
+;; This is third-party java library that generates UUID v7 (canonical)
+user=&amp;gt; (perf/bench :f #(UuidCreator/getTimeOrderedEpoch) :name &amp;quot;uuid-v7.0-java-uc&amp;quot;)
+=&amp;gt; benchmarking: uuid-v7.0-java-uc
+--&amp;gt; TOTAL: 10.52sec
+--&amp;gt; MEAN:  448.02ns
+
+;; This is third-party java library that generates UUID v7 (variant 1)
+user=&amp;gt; (perf/bench :f #(UuidCreator/getTimeOrderedEpochPlus1) :name &amp;quot;uuid-v7.1-java-uc&amp;quot;)
+=&amp;gt; benchmarking: uuid-v7.1-java-uc
+--&amp;gt; TOTAL: 10.33sec
+--&amp;gt; MEAN:  97.86ns
+
+;; This is our in-house implementation of UUID v8
+user=&amp;gt; (perf/bench :f #(app.common.UUIDv8/create) :name &amp;quot;uuid-v8-java-penpot&amp;quot;)
+=&amp;gt; benchmarking: uuid-v8-java-penpot
+--&amp;gt; TOTAL: 10.09sec
+--&amp;gt; MEAN:  89.26ns
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</content><category term="blog"></category><category term="penpot"></category><category term="clojure"></category></entry><entry><title>Why GraphQL uses string based templates for queries?</title><link href="https://niwi.nz/2017/03/01/why-graphql-uses-string-based-templates-for-queries/" rel="alternate"></link><published>2017-03-01T00:00:00+00:00</published><updated>2017-03-01T00:00:00+00:00</updated><author><name>Andrey Antukh</name></author><id>tag:niwi.nz,2017-03-01:/2017/03/01/why-graphql-uses-string-based-templates-for-queries/</id><summary type="html">&lt;p&gt;I've followed the graphql development from its public announcement
 and at first I had my doubts about it, but over time I found the main
 idea very interesting. However I could not stop asking myself: &lt;strong&gt;why
 string based templates are still used for representing the query language?&lt;/strong&gt;&lt;/p&gt;
