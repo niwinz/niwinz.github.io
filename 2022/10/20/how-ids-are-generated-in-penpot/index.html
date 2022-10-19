@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <title>niwi.nz : How IDs are generated in Penpot</title>
     <meta name="viewport" content="width=200, initial-scale=1" />
-  <meta name="desciption" content="Let&#39;s begin by mentioning that this post was originated from a conversation I had with the Taiga development team about how we generate ID’s in Penpot. The idea was to know what decisions we have made in this regard and understand the implementation details. At Penpot, since its inception, we made the decision to use UUID to generate ID&#39;s. If you are not familiar with the subject, you’ll find useful this good article on wikipedia that explains a bit about UUID. The simplest rationale..." />
+  <meta name="desciption" content="Lets beging with some context This post was originated from a conversation I had with the Taiga development team about how we generate ID’s in Penpot. The idea was to know what decisions we have made in this regard and understand the implementation details. At Penpot, since its inception, we made the decision to use UUID to generate ID&#39;s. If you are not familiar with the subject, you’ll find useful this good article on wikipedia that explains a bit about UUID. The simplest rationale for..." />
     <meta name="author" content="Andrey Antukh" />
 
     <link rel="stylesheet" href="https://niwi.nz/theme/css/main.css" />
@@ -42,63 +42,86 @@
     </div>
   </header>
   <article>
-    <p>Let's begin by mentioning that this post was originated from a conversation I had with the
-<a href="https://taiga.io">Taiga</a> development team about how we generate ID’s in <a href="https://penpot.app">Penpot</a>. The idea was to know what
-decisions we have made in this regard and understand the implementation details.</p>
-<p>At <a href="https://penpot.app">Penpot</a>, since its inception, we made the decision to use <a href="https://www.rfc-editor.org/rfc/rfc4122.html">UUID</a> to generate ID's. If you
-are not familiar with the subject, you’ll find useful this <a href="https://en.wikipedia.org/wiki/Universally_unique_identifier">good article on wikipedia</a> that
-explains a bit about UUID. The simplest rationale for generating IDs is that we needed to be able to
-create IDs on both the frontend and the backend. From the start, we already had a distributed ID
-generation scenario but a simple incremental in the database table was not enough for us.</p>
-<p>The quick approach would have been to use the typical UUID <strong>v4</strong>, but as this variant is mainly
-generated with random data it implies certain problems: it’s not sortable and causes fragmentation
-in the database indexes, thus degrading query performance over time. So we began by using UUID v1.</p>
-<p>What alternatives we considered before choosing UUID?  We also considered several alternatives
-before going via the UUID route:</p>
+    <h3>Lets beging with some context</h3>
+<p>This post was originated from a conversation I had with the <a href="https://taiga.io">Taiga</a>
+development team about how we generate ID’s in <a href="https://penpot.app">Penpot</a>. The idea
+was to know what decisions we have made in this regard and understand
+the implementation details.</p>
+<p>At <a href="https://penpot.app">Penpot</a>, since its inception, we made the decision to use
+<a href="https://www.rfc-editor.org/rfc/rfc4122.html">UUID</a> to generate ID's. If you are not familiar with the subject,
+you’ll find useful this <a href="https://en.wikipedia.org/wiki/Universally_unique_identifier">good article on wikipedia</a> that explains a
+bit about UUID. The simplest rationale for generating IDs is that we
+needed to be able to create IDs on both the frontend and the
+backend. From the start, we already had a distributed ID generation
+scenario but a simple incremental in the database table was not enough
+for us.</p>
+<p>The quick approach would have been to use the typical UUID <strong>v4</strong>, but
+as this variant is mainly generated with random data it implies
+certain problems: it’s not sortable and causes fragmentation in the
+database indexes, thus degrading query performance over time. So we
+began by using UUID v1.</p>
+<h3>What alternatives we considered before choosing UUID?</h3>
+<p>We also considered several alternatives before going via the UUID
+route:</p>
 <ul>
-<li><a href="https://github.com/ulid/spec">ulid</a>: The basic idea behind ulid is very interesting because it is very close to the final
-  solution we have taken. The main problem it’s to do with the fact that if we want to store it
-  efficiently, we would have to decode the value to two int64s and store it in the database in two
-  separate fields, which would make all queries more cumbersome. I’m aware that, as an alternative,
-  we can take advantage of the UUID type of the database to store the 128 bits of this ID there, but
-  semantically it would be possibly confusing. Storing it in a string format is not an option,
-  because that would imply having more data to store and therefore larger indexes. </li>
+<li><a href="https://github.com/ulid/spec">ulid</a>: The basic idea behind ulid is very interesting because it
+  is very close to the final solution we have taken. The main problem
+  it’s to do with the fact that if we want to store it efficiently, we
+  would have to decode the value to two int64s and store it in the
+  database in two separate fields, which would make all queries more
+  cumbersome. I’m aware that, as an alternative, we can take advantage
+  of the UUID type of the database to store the 128 bits of this ID
+  there, but semantically it would be possibly confusing. Storing it
+  in a string format is not an option, because that would imply having
+  more data to store and therefore larger indexes.</li>
 <li><a href="https://github.com/muyo/sno">sno</a>: in the same line as ulid, implemented only in go</li>
 <li><a href="https://github.com/ai/nanoid">nanoid</a>: very similar to UUID v4. Plus you need to save the value as a string, hence we
   discarded this option very quickly.</li>
 </ul>
-<p>There are many custom implementations with different characteristics and there are no plan for list
-them all.</p>
-<p>Clearly, our choice to use UUID v1 doesn't comes without its own problems: unlike v4, it's partially
-sortable because it strangely places the least significant bits of timestamp at the start in binary
-encoding, unusual 100-ns precision gregorian epoch, and also it needs access to the MAC address
-among other less important things. As for our case, we expected to use it always in virtual
-environments, so the access to MAC was not so problematic. And at the frontend, we emulated the mac
-generating random data in the first use.</p>
-<p>After the conversation, I've decided to review how we're generating uuids and I've come across this
-<a href="https://datatracker.ietf.org/doc/html/draft-peabody-dispatch-new-uuid-format">new revision of the UUID RFC</a> where the new 3 UUID formats are outlined: the v6, v7 and v8.</p>
-<p>To summarize, we have v6 which is similar to v1 with an improved timestamp bits ordering, v7 (with
-its variants 1 and 2) mixes between v4 and v6 ,with a more standard epoch, precision in milliseconds
-combining it with a random part instead of the MAC address. And finally v8, which basically defines
-only the minimum necessary to preserve compatibility with the rest of the formats and leaves the
+<p>There are many custom implementations with different characteristics
+and there are no plan for list them all.</p>
+<p>Clearly, our choice to use UUID v1 doesn't comes without its own
+problems: unlike v4, it's partially sortable because it strangely
+places the least significant bits of timestamp at the start in binary
+encoding, unusual 100-ns precision gregorian epoch, and also it needs
+access to the MAC address among other less important things. As for
+our case, we expected to use it always in virtual environments, so the
+access to MAC was not so problematic. And at the frontend, we emulated
+the mac generating random data in the first use.</p>
+<p>After the conversation, I've decided to review how we're generating
+uuids and I've come across this <a href="https://datatracker.ietf.org/doc/html/draft-peabody-dispatch-new-uuid-format">new revision of the UUID RFC</a>
+where the new 3 UUID formats are outlined: the v6, v7 and v8.</p>
+<p>To summarize, we have v6 which is similar to v1 with an improved
+timestamp bits ordering, v7 (with its variants 1 and 2) mixes between
+v4 and v6 ,with a more standard epoch, precision in milliseconds
+combining it with a random part instead of the MAC address. And
+finally v8, which basically defines only the minimum necessary to
+preserve compatibility with the rest of the formats and leaves the
 rest to the choice of the custom implementation.</p>
-<p>For Penpot, I have chosen to take good ideas from ULID and UUID v6 and implement a custom one using
-the UUID v8 format. These are the properties of our new UUID implementation:</p>
+<h3>The current approach</h3>
+<p>I have chosen to take good ideas from ULID and UUID v6 and implement a
+custom one using the UUID v8 format. These are the properties of our
+new UUID implementation:</p>
 <ul>
-<li>48bits timestamp (milliseconds precision, custom epoch: 2022-01-01 00:00:00)</li>
-<li>14bits random clockseq (monotonically increasing on timestamp collision, allows 16384 ids/ms per host)</li>
+<li>48bits timestamp (milliseconds precision, custom epoch: 2022-01-01
+  00:00:00)</li>
+<li>14bits random clockseq (monotonically increasing on timestamp
+  collision, allows 16384 ids/ms per host)</li>
 <li>blocks (no exceptions raised) if clockseq overflows</li>
 <li>56bits of randomness, generated on library initialization</li>
-<li>4bits for user defined tag (allows distinguish between environments where the ID is generated)</li>
+<li>4bits for user defined tag (allows distinguish between environments
+  where the ID is generated)</li>
 <li>don’t run out of range until 10941 AD</li>
-<li>on clock regression, the 56bits of static randomness are reinitialized</li>
+<li>on clock regression, the 56bits of static randomness are
+  reinitialized</li>
 </ul>
-<p>With this: we maintain compatibility with the current solution as we continue to use the same type
-of data that is efficiently stored in the database; have better visual readability; better
-sortability and greatly improved performance. You can take a look at the <a href="https://github.com/penpot/penpot/blob/develop/common/src/app/common/UUIDv8.java">JVM implementation
+<p>We maintain compatibility with the current solution as we continue to
+use the same type of data that is efficiently stored in the database;
+have better visual readability; better sortability and greatly
+improved performance. You can take a look at the <a href="https://github.com/penpot/penpot/blob/develop/common/src/app/common/UUIDv8.java">JVM implementation
 here</a> and the <a href="https://github.com/penpot/penpot/blob/develop/common/src/app/common/uuid_impl.js">JS implementation here</a>.</p>
-<p>Here below is a benchmark that illustrates the difference in performance between different
-implementations and versions:</p>
+<p>Here below is a benchmark that illustrates the difference in
+performance between different implementations and versions:</p>
 <div class="highlight"><pre><span></span><code>;; This is a standard jdk way of generate UUID v4
 user=&gt; (perf/bench :f #(java.util.UUID/randomUUID) :name &quot;uuid-v4-java&quot;)
 =&gt; benchmarking: uuid-v4-java

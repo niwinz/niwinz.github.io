@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<rss version="2.0"><channel><title>niwi.nz - Andrey Antukh</title><link>https://niwi.nz/</link><description></description><lastBuildDate>Thu, 20 Oct 2022 00:00:00 +0000</lastBuildDate><item><title>How IDs are generated in Penpot</title><link>https://niwi.nz/2022/10/20/how-ids-are-generated-in-penpot/</link><description>&lt;p&gt;Let's begin by mentioning that this post was originated from a conversation I had with the
-&lt;a href="https://taiga.io"&gt;Taiga&lt;/a&gt; development team about how we generate ID’s in &lt;a href="https://penpot.app"&gt;Penpot&lt;/a&gt;. The idea was to know what
-decisions we have made in this regard and understand the implementation details.&lt;/p&gt;
+<rss version="2.0"><channel><title>niwi.nz - Andrey Antukh</title><link>https://niwi.nz/</link><description></description><lastBuildDate>Thu, 20 Oct 2022 00:00:00 +0000</lastBuildDate><item><title>How IDs are generated in Penpot</title><link>https://niwi.nz/2022/10/20/how-ids-are-generated-in-penpot/</link><description>&lt;h3&gt;Lets beging with some context&lt;/h3&gt;
+&lt;p&gt;This post was originated from a conversation I had with the &lt;a href="https://taiga.io"&gt;Taiga&lt;/a&gt;
+development team about how we generate ID’s in &lt;a href="https://penpot.app"&gt;Penpot&lt;/a&gt;. The idea
+was to know what decisions we have made in this regard and understand
+the implementation details.&lt;/p&gt;
 &lt;p&gt;At &lt;a href="https://penpot.app"&gt;Penpot&lt;/a&gt;, since its inception …&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Andrey Antukh</dc:creator><pubDate>Thu, 20 Oct 2022 00:00:00 +0000</pubDate><guid isPermaLink="false">tag:niwi.nz,2022-10-20:/2022/10/20/how-ids-are-generated-in-penpot/</guid><category>blog</category><category>penpot</category><category>clojure</category></item><item><title>Why GraphQL uses string based templates for queries?</title><link>https://niwi.nz/2017/03/01/why-graphql-uses-string-based-templates-for-queries/</link><description>&lt;p&gt;I've followed the graphql development from its public announcement
 and at first I had my doubts about it, but over time I found the main
 idea very interesting. However I could not stop asking myself: &lt;strong&gt;why
