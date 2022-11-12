@@ -40,7 +40,6 @@ main {
   max-width: 900px;
   flex-direction: column;
   font-size: 16px;
-
 }
 
 header {
@@ -76,8 +75,9 @@ article {
   padding-top: 0px;
 }
 
-article a {
+article a, article a:visited {
   font-weight: 400;
+  text-decoration: underline;
 }
 
 article p, article li {
